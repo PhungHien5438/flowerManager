@@ -242,29 +242,35 @@
         window.currentUser = null;
 
         // TỰ ĐỘNG ĐỒNG BỘ REALTIME - Bất kể máy nào sửa, tất cả các máy khác nhận dữ liệu mới ngay lập tức
-        onSnapshot(dbDocRef, (docSnap) => {
-            if (docSnap.exists()) {
-                window.db = docSnap.data();
-            } else {
-                // Khởi tạo Database Admin gốc nếu dữ liệu trên mây đang trống hoàn toàn
-                window.db = {
-                    members: [{ id: "M_ROOT", ingame: "admin", zaloName: "Admin Tổng", status: "Hoạt động", role: "admin", password: "admin", ownFlowers: [], raceFlowers: [] }],
-                    flowers: [{ id: "F_INIT", name: "Hoa Hồng Đỏ", level: "đỏ", image: "https://picsum.photos/50" }]
-                };
-                setDoc(dbDocRef, window.db);
-            }
-            
-            // Cập nhật lại giao diện tự động khi có bất kỳ ai thay đổi dữ liệu
-            if(window.currentUser) {
-                setupSearchDropdowns();
-                renderMyFlowerTab();
-                renderAdminMembers();
-                renderAdminFlowers();
-                searchByFlower();
-                searchByMember();
-            }
-        });
-
+		// Lắng nghe kết nối Realtime từ Cloud Firebase
+		onSnapshot(dbDocRef, (docSnap) => {
+			if (docSnap.exists()) {
+				window.db = docSnap.data();
+				console.log("🟢 [Firebase] Đã kết nối và đồng bộ dữ liệu vĩnh viễn.");
+				
+				// 👉 KHU VỰC SỬA LỖI F5: Chỉ tự động gọi Login khi biến window.db đã có dữ liệu thật từ mây về
+				if (sessionStorage.getItem("loggedUserIngame")) {
+					// Kiểm tra nếu hàm checkAutoLogin đã sẵn sàng trong hệ thống
+					if (typeof window.checkAutoLogin === "function") {
+						window.checkAutoLogin();
+					} else if (typeof checkAutoLogin === "function") {
+						checkAutoLogin();
+					}
+				} else if (window.currentUser) {
+					// Nếu đang dùng bình thường mà dữ liệu trên mạng thay đổi, tự động vẽ lại giao diện
+					if (typeof setupSearchDropdowns === "function") setupSearchDropdowns();
+					if (typeof renderMyFlowerTab === "function") renderMyFlowerTab();
+					if (typeof renderAdminMembers === "function") renderAdminMembers();
+					if (typeof renderAdminFlowers === "function") renderAdminFlowers();
+				}
+			} else {
+				console.log("🟡 [Firebase] Cấu trúc trống.");
+				window.db = { members: [], flowers: [] };
+				setDoc(dbDocRef, window.db);
+			}
+		}, (error) => {
+			console.error("🔴 [Firebase] Lỗi kết nối đám mây: ", error.message);
+		});
         // Đẩy hàm lưu lên đám mây vào môi trường Global để các nút bấm HTML gọi được
         window.saveDBtoCloud = async function() {
             await setDoc(dbDocRef, window.db);
@@ -312,10 +318,18 @@
 		// Hàm tự động đăng nhập khi F5 (Sẽ được gọi từ Firebase khi dữ liệu tải xong)
 		function checkAutoLogin() {
 		    const savedIngame = sessionStorage.getItem("loggedUserIngame");
+		    
+		    // Kiểm tra nếu có lưu phiên đăng nhập và database đám mây đã tải xong dữ liệu
 		    if (savedIngame && window.db && window.db.members) {
-		        const user = window.db.members.find(m => m.ingame === savedIngame && m.status === "Hoạt động");
+		        const validMembers = window.db.members.filter(m => m && typeof m === 'object' && m.ingame);
+		        const user = validMembers.find(m => m.ingame === savedIngame && m.status === "Hoạt động");
+		        
 		        if (user) {
+		            console.log("🔄 Tự động đăng nhập lại cho tài khoản:", savedIngame);
 		            executeLoginSuccess(user);
+		        } else {
+		            // Nếu tài khoản không còn tồn tại trên mạng hoặc bị khóa, xóa phiên cũ
+		            sessionStorage.removeItem("loggedUserIngame"); 
 		        }
 		    }
 		}
