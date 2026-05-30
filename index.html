@@ -264,8 +264,7 @@
 
     <script>
         // --- ĐĂNG NHẬP / ĐĂNG XUẤT ---
-        // --- ĐĂNG NHẬP / ĐĂNG XUẤT (ĐÃ SỬA LỖI CANNOT READ PROPERTIES OF UNDEFINED) ---
-		// --- ĐĂNG NHẬP THÔNG MINH - TỰ KHỞI TẠO ADMIN NẾU DATABASE TRÊN MẠNG RỖNG ---
+        // --- ĐĂNG NHẬP THÔNG MINH & GIỮ TRẠNG THÁI KHI F5 ---
 		function handleLogin() {
 		    if (!window.db || window.db.members === undefined) {
 		        alert("Hệ thống đang kết nối với dữ liệu đám mây (Cloud), vui lòng đợi 1-2 giây rồi bấm lại nhé!");
@@ -275,51 +274,45 @@
 		    const userIn = document.getElementById('login-username').value.trim();
 		    const passIn = document.getElementById('login-password').value.trim();
 		
-		    // 👉 TRƯỜNG HỢP 1: Database trên mạng trống trơn (Mảng members rỗng)
-		    if (window.db.members.length === 0) {
-		        if (userIn === "admin" && passIn === "admin") {
-		            // Tự động tạo cấu trúc admin gốc
-		            const rootAdmin = { 
-		                id: "M_ROOT", 
-		                ingame: "admin", 
-		                zaloName: "Admin Tổng", 
-		                status: "Hoạt động", 
-		                role: "admin", 
-		                password: "admin", 
-		                ownFlowers: [], 
-		                raceFlowers: [] 
-		            };
-		            window.db.members.push(rootAdmin);
-		            
-		            // Nếu chưa có hoa nào, thêm 1 bông hoa mẫu cho đúng luật cấu trúc
-		            if(window.db.flowers.length === 0) {
-		                window.db.flowers.push({ id: "F_INIT", name: "Hoa Hồng Đỏ", level: "đỏ", image: "https://picsum.photos/50" });
-		            }
+		    const validMembers = window.db.members.filter(m => m && typeof m === 'object' && m.ingame);
 		
-		            // Đẩy trực tiếp dữ liệu chuẩn này lên Firebase
+		    if (validMembers.length === 0) {
+		        if (userIn === "admin" && passIn === "admin") {
+		            const rootAdmin = { id: "M_ROOT", ingame: "admin", zaloName: "Admin Tổng", status: "Hoạt động", role: "admin", password: "admin", ownFlowers: [], raceFlowers: [] };
+		            window.db.members = [rootAdmin];
+		            window.db.flowers = [{ id: "F_INIT", name: "Hoa Hồng Đỏ", level: "đỏ", image: "https://picsum.photos/50" }];
+		
 		            saveDBtoCloud().then(() => {
-		                alert("Khởi tạo tài khoản Admin Tổng thành công lên Cloud!");
+		                alert("Khởi tạo Admin Tổng thành công!");
 		                executeLoginSuccess(rootAdmin);
 		            });
-		            return;
-		        } else {
-		            alert("Hệ thống chưa có dữ liệu thành viên. Vui lòng đăng nhập bằng tài khoản mặc định: admin / mật khẩu: admin để kích hoạt hệ thống!");
 		            return;
 		        }
 		    }
 		
-		    // 👉 TRƯỜNG HỢP 2: Database đã có dữ liệu, tiến hành kiểm tra như bình thường
-		    const user = window.db.members.find(m => m.ingame === userIn && m.password === passIn && m.status === "Hoạt động");
+		    const user = validMembers.find(m => m.ingame === userIn && m.password === passIn && m.status === "Hoạt động");
 		    if (user) {
+		        // Lưu thông tin đăng nhập vào Bộ nhớ phiên để F5 không bị mất
+		        sessionStorage.setItem("loggedUserIngame", user.ingame);
 		        executeLoginSuccess(user);
 		    } else {
 		        document.getElementById('login-error').classList.remove('hidden');
 		    }
 		}
 		
-		// Hàm bổ trợ thực hiện đổi giao diện khi đăng nhập thành công
+		// Hàm tự động đăng nhập khi F5 (Sẽ được gọi từ Firebase khi dữ liệu tải xong)
+		function checkAutoLogin() {
+		    const savedIngame = sessionStorage.getItem("loggedUserIngame");
+		    if (savedIngame && window.db && window.db.members) {
+		        const user = window.db.members.find(m => m.ingame === savedIngame && m.status === "Hoạt động");
+		        if (user) {
+		            executeLoginSuccess(user);
+		        }
+		    }
+		}
+		
 		function executeLoginSuccess(user) {
-		    currentUser = user;
+		    window.currentUser = user; // Giữ biến toàn cục
 		    document.getElementById('login-screen').classList.add('hidden');
 		    document.getElementById('main-screen').classList.remove('hidden');
 		    document.getElementById('user-tag').innerText = `${user.ingame} (${user.role})`;
@@ -329,16 +322,21 @@
 		        document.getElementById('nav-admin-member').classList.remove('hidden');
 		        document.getElementById('nav-admin-flower').classList.remove('hidden');
 		    }
-		    switchTab('tab-search');
+		    // Vẽ lại toàn bộ giao diện dựa trên dữ liệu thật vừa tải từ mây về
+		    setupSearchDropdowns();
+		    renderMyFlowerTab();
+		    renderAdminMembers();
+		    renderAdminFlowers();
 		}
-
-        function handleLogout() {
-            currentUser = null;
-            document.getElementById('login-screen').classList.remove('hidden');
-            document.getElementById('main-screen').classList.add('hidden');
-            document.getElementById('nav-admin-member').classList.add('hidden');
-            document.getElementById('nav-admin-flower').classList.add('hidden');
-        }
+		
+		function handleLogout() {
+		    window.currentUser = null;
+		    sessionStorage.removeItem("loggedUserIngame"); // Xóa phiên đăng nhập
+		    document.getElementById('login-screen').classList.remove('hidden');
+		    document.getElementById('main-screen').classList.add('hidden');
+		    document.getElementById('nav-admin-member').classList.add('hidden');
+		    document.getElementById('nav-admin-flower').classList.add('hidden');
+		}
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
