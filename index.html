@@ -265,34 +265,71 @@
     <script>
         // --- ĐĂNG NHẬP / ĐĂNG XUẤT ---
         // --- ĐĂNG NHẬP / ĐĂNG XUẤT (ĐÃ SỬA LỖI CANNOT READ PROPERTIES OF UNDEFINED) ---
+		// --- ĐĂNG NHẬP THÔNG MINH - TỰ KHỞI TẠO ADMIN NẾU DATABASE TRÊN MẠNG RỖNG ---
 		function handleLogin() {
-		    // 1. Kiểm tra xem dữ liệu từ Firebase đã tải về máy xong chưa
-		    if (!db || !db.members) {
+		    if (!window.db || window.db.members === undefined) {
 		        alert("Hệ thống đang kết nối với dữ liệu đám mây (Cloud), vui lòng đợi 1-2 giây rồi bấm lại nhé!");
 		        return;
 		    }
 		
 		    const userIn = document.getElementById('login-username').value.trim();
 		    const passIn = document.getElementById('login-password').value.trim();
-		    
-		    // 2. Tìm kiếm tài khoản an toàn sau khi đã chắc chắn db.members tồn tại
-		    const user = db.members.find(m => m.ingame === userIn && m.password === passIn && m.status === "Hoạt động");
-		    
-		    if (user) {
-		        currentUser = user;
-		        document.getElementById('login-screen').classList.add('hidden');
-		        document.getElementById('main-screen').classList.remove('hidden');
-		        document.getElementById('user-tag').innerText = `${user.ingame} (${user.role})`;
-		        document.getElementById('user-tag-pc').innerText = `Xin chào: ${user.ingame} (${user.role})`;
-		        
-		        if (user.role === 'admin') {
-		            document.getElementById('nav-admin-member').classList.remove('hidden');
-		            document.getElementById('nav-admin-flower').classList.remove('hidden');
+		
+		    // 👉 TRƯỜNG HỢP 1: Database trên mạng trống trơn (Mảng members rỗng)
+		    if (window.db.members.length === 0) {
+		        if (userIn === "admin" && passIn === "admin") {
+		            // Tự động tạo cấu trúc admin gốc
+		            const rootAdmin = { 
+		                id: "M_ROOT", 
+		                ingame: "admin", 
+		                zaloName: "Admin Tổng", 
+		                status: "Hoạt động", 
+		                role: "admin", 
+		                password: "admin", 
+		                ownFlowers: [], 
+		                raceFlowers: [] 
+		            };
+		            window.db.members.push(rootAdmin);
+		            
+		            // Nếu chưa có hoa nào, thêm 1 bông hoa mẫu cho đúng luật cấu trúc
+		            if(window.db.flowers.length === 0) {
+		                window.db.flowers.push({ id: "F_INIT", name: "Hoa Hồng Đỏ", level: "đỏ", image: "https://picsum.photos/50" });
+		            }
+		
+		            // Đẩy trực tiếp dữ liệu chuẩn này lên Firebase
+		            saveDBtoCloud().then(() => {
+		                alert("Khởi tạo tài khoản Admin Tổng thành công lên Cloud!");
+		                executeLoginSuccess(rootAdmin);
+		            });
+		            return;
+		        } else {
+		            alert("Hệ thống chưa có dữ liệu thành viên. Vui lòng đăng nhập bằng tài khoản mặc định: admin / mật khẩu: admin để kích hoạt hệ thống!");
+		            return;
 		        }
-		        switchTab('tab-search');
+		    }
+		
+		    // 👉 TRƯỜNG HỢP 2: Database đã có dữ liệu, tiến hành kiểm tra như bình thường
+		    const user = window.db.members.find(m => m.ingame === userIn && m.password === passIn && m.status === "Hoạt động");
+		    if (user) {
+		        executeLoginSuccess(user);
 		    } else {
 		        document.getElementById('login-error').classList.remove('hidden');
 		    }
+		}
+		
+		// Hàm bổ trợ thực hiện đổi giao diện khi đăng nhập thành công
+		function executeLoginSuccess(user) {
+		    currentUser = user;
+		    document.getElementById('login-screen').classList.add('hidden');
+		    document.getElementById('main-screen').classList.remove('hidden');
+		    document.getElementById('user-tag').innerText = `${user.ingame} (${user.role})`;
+		    document.getElementById('user-tag-pc').innerText = `Xin chào: ${user.ingame} (${user.role})`;
+		    
+		    if (user.role === 'admin') {
+		        document.getElementById('nav-admin-member').classList.remove('hidden');
+		        document.getElementById('nav-admin-flower').classList.remove('hidden');
+		    }
+		    switchTab('tab-search');
 		}
 
         function handleLogout() {
