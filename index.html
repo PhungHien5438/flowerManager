@@ -54,23 +54,18 @@
         <div class="max-w-7xl mx-auto p-4 mt-4">
             <div id="tab-search" class="tab-content active space-y-6">
                 <div class="bg-white p-4 rounded-lg shadow space-y-4">
-					<h2 class="text-lg font-bold border-b pb-2 text-gray-800">🔍 BỘ LỌC TRA CỨU</h2>
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-						
-						<div class="relative">
-							<label class="block text-xs font-bold text-gray-500 uppercase mb-1">Gõ tìm kiếm Hoa</label>
-							<input type="text" id="search-flower-input" oninput="filterFlowerDropdown()" placeholder="Nhập tên hoa hoặc cấp độ..." class="block w-full p-2 border rounded-md bg-gray-50 mb-1 text-sm focus:bg-white">
-							<select id="search-flower-select" onchange="searchByFlower()" size="5" class="block w-full p-2 border rounded-md text-sm h-32"></select>
-						</div>
-
-						<div class="relative">
-							<label class="block text-xs font-bold text-gray-500 uppercase mb-1">Gõ tìm kiếm Member</label>
-							<input type="text" id="search-member-input" oninput="filterMemberDropdown()" placeholder="Nhập ingame hoặc tên Zalo..." class="block w-full p-2 border rounded-md bg-gray-50 mb-1 text-sm focus:bg-white">
-							<select id="search-member-select" onchange="searchByMember()" size="5" class="block w-full p-2 border rounded-md text-sm h-32"></select>
-						</div>
-
-					</div>
-				</div>
+                    <h2 class="text-lg font-bold border-b pb-2 text-gray-800">🔍 BỘ LỌC TRA CỨU</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase">Tìm kiếm theo Hoa</label>
+                            <select id="search-flower-select" onchange="searchByFlower()" class="mt-1 block w-full p-2 border rounded-md"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase">Tìm kiếm theo Member</label>
+                            <select id="search-member-select" onchange="searchByMember()" class="mt-1 block w-full p-2 border rounded-md"></select>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white p-4 rounded-lg shadow">
@@ -333,60 +328,18 @@
         }
 
         // --- TRA CỨU TÌM KIẾM ---
-        // 1. Hàm nạp toàn bộ danh sách gốc ban đầu
-		function setupSearchDropdowns() {
-			const fSelect = document.getElementById('search-flower-select');
-			const mSelect = document.getElementById('search-member-select');
-			
-			// Lưu lại giá trị đang chọn hiện tại (nếu có) để tránh bị reset khi mây đồng bộ
-			const currentF = fSelect.value; 
-			const currentM = mSelect.value;
+        function setupSearchDropdowns() {
+            const fSelect = document.getElementById('search-flower-select');
+            const mSelect = document.getElementById('search-member-select');
+            const currentF = fSelect.value; const currentM = mSelect.value;
 
-			// Chỉ nạp lại danh sách nếu người dùng đang không gõ tìm kiếm dở dang
-			if (!document.getElementById('search-flower-input').value) {
-				fSelect.innerHTML = '';
-				db.flowers.forEach(f => fSelect.innerHTML += `<option value="${f.id}">${f.name} [Màu ${f.level}]</option>`);
-				fSelect.value = currentF;
-			}
-			
-			if (!document.getElementById('search-member-input').value) {
-				mSelect.innerHTML = '';
-				db.members.forEach(m => mSelect.innerHTML += `<option value="${m.id}">${m.ingame} (${m.zaloName})</option>`);
-				mSelect.value = currentM;
-			}
-		}
-
-		// 2. Hàm lọc Hoa theo thời gian thực khi gõ chữ
-		function filterFlowerDropdown() {
-			const keyword = document.getElementById('search-flower-input').value.toLowerCase().trim();
-			const fSelect = document.getElementById('search-flower-select');
-			fSelect.innerHTML = '';
-
-			const filtered = db.flowers.filter(f => 
-				f.name.toLowerCase().includes(keyword) || 
-				f.level.toLowerCase().includes(keyword)
-			);
-
-			filtered.forEach(f => {
-				fSelect.innerHTML += `<option value="${f.id}">${f.name} [Màu ${f.level}]</option>`;
-			});
-		}
-
-		// 3. Hàm lọc Member theo thời gian thực khi gõ chữ
-		function filterMemberDropdown() {
-			const keyword = document.getElementById('search-member-input').value.toLowerCase().trim();
-			const mSelect = document.getElementById('search-member-select');
-			mSelect.innerHTML = '';
-
-			const filtered = db.members.filter(m => 
-				m.ingame.toLowerCase().includes(keyword) || 
-				m.zaloName.toLowerCase().includes(keyword)
-			);
-
-			filtered.forEach(m => {
-				mSelect.innerHTML += `<option value="${m.id}">${m.ingame} (${m.zaloName})</option>`;
-			});
-		}
+            fSelect.innerHTML = '<option value="">-- Chọn hoa cần tìm --</option>';
+            db.flowers.forEach(f => fSelect.innerHTML += `<option value="${f.id}">${f.name} (${f.level})</option>`);
+            mSelect.innerHTML = '<option value="">-- Chọn member cần tìm --</option>';
+            db.members.forEach(m => mSelect.innerHTML += `<option value="${m.id}">${m.ingame} [${m.zaloName}]</option>`);
+            
+            fSelect.value = currentF; mSelect.value = currentM;
+        }
 
         function searchByFlower() {
             const fId = document.getElementById('search-flower-select').value;
