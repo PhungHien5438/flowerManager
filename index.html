@@ -194,7 +194,11 @@
                 </div>
 
                 <div class="bg-white p-4 rounded-xl shadow overflow-x-auto">
-                    <h3 class="text-lg font-bold mb-3 text-gray-700">Danh Sách Thành Viên</h3>
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2 border-b pb-3">
+                        <h3 class="text-lg font-bold text-gray-700">📋 Danh Sách Thành Viên</h3>
+                        <input type="text" id="admin-search-member" oninput="filterAdminMemberList()" placeholder="🔍 Tìm theo Ingame hoặc tên Zalo..." class="border p-2 rounded text-sm w-full md:w-64 shadow-sm outline-none focus:ring-2 focus:ring-indigo-400">
+                    </div>
+
                     <table class="w-full text-sm text-left border-collapse">
                         <thead>
                             <tr class="bg-gray-100 border-b">
@@ -202,7 +206,7 @@
                                 <th class="p-2">Zalo</th>
                                 <th class="p-2">Quyền</th>
                                 <th class="p-2">Trạng thái</th>
-                                <th class="p-2 text-center">Đua Hội</th> 
+                                <th class="p-2 text-center">Đua Hội</th>
                                 <th class="p-2 text-right">Hành động</th>
                             </tr>
                         </thead>
@@ -553,17 +557,26 @@
 
         // TAB 3: ADMIN QUẢN LÝ MEMBER
         // 1. SỬA HÀM HIỂN THỊ DANH SÁCH MEMBER TRONG TAB ADMIN
-        function renderMemberList() {
+        // 1. SỬA HÀM HIỂN THỊ DANH SÁCH MEMBER (Hỗ trợ bộ lọc tìm kiếm)
+        function renderMemberList(filteredMembers = null) {
             const tbody = document.getElementById('member-list-table');
             tbody.innerHTML = '';
-            db.Members.forEach(m => {
-                // Ép kiểu chuẩn cho isDone từ Sheet
+            
+            // Nếu có bộ lọc thì dùng danh sách đã lọc, ngược lại dùng toàn bộ Member gốc
+            const memberList = filteredMembers ? filteredMembers : db.Members;
+
+            if (memberList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500 italic">Không tìm thấy thành viên nào phù hợp</td></tr>`;
+                return;
+            }
+
+            memberList.forEach(m => {
                 const isDoneChecked = (String(m.isDone).toLowerCase() === 'true');
                 
                 tbody.innerHTML += `
-                    <tr class="border-b text-xs md:text-sm">
-                        <td class="p-2 font-bold">${m.ingame}</td>
-                        <td class="p-2">${m.zaloName}</td>
+                    <tr class="border-b text-xs md:text-sm hover:bg-gray-50 transition">
+                        <td class="p-2 font-bold text-gray-800">${m.ingame}</td>
+                        <td class="p-2 text-gray-600">${m.zaloName || ''}</td>
                         <td class="p-2"><span class="px-2 py-0.5 rounded ${m.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-gray-100'}">${m.role}</span></td>
                         <td class="p-2">${m.status}</td>
                         <td class="p-2 text-center">
@@ -577,6 +590,23 @@
                     </tr>
                 `;
             });
+        }
+
+        // 2. THÊM HÀM LỌC TÌM KIẾM THÀNH VIÊN THEO INGAME HOẶC ZALO
+        function filterAdminMemberList() {
+            const keyword = document.getElementById('admin-search-member').value.toLowerCase().trim();
+            if (!keyword) {
+                renderMemberList(); // Nếu ô tìm kiếm trống, hiển thị toàn bộ danh sách
+                return;
+            }
+            
+            // Lọc song song: Khớp với tên Ingame HOẶC khớp với tên Zalo
+            const filtered = db.Members.filter(m => 
+                m.ingame.toLowerCase().includes(keyword) || 
+                (m.zaloName && m.zaloName.toLowerCase().includes(keyword))
+            );
+            
+            renderMemberList(filtered);
         }
 
         // 2. SỬA HÀM LƯU THÔNG TIN THÀNH VIÊN CỦA ADMIN (Ghi nhận thêm trường isDone)
