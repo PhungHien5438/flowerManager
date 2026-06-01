@@ -291,6 +291,8 @@
         function handleLogin() {
             const ingame = document.getElementById('login-ingame').value.trim();
             const pass = document.getElementById('login-password').value.trim();
+
+            console.log("====ingame, pass", ingame, pass);
             
             const user = db.Members.find(m => m.ingame === ingame && m.password === pass);
             if(!user) return alert("Sai tài khoản hoặc mật khẩu!");
