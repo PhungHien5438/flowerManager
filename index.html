@@ -44,6 +44,7 @@
         <nav class="bg-white shadow flex border-b overflow-x-auto text-sm md:text-base">
             <button onclick="switchTab('tab-search')" class="tab-btn px-4 py-3 font-medium text-indigo-600 border-b-2 border-indigo-600 whitespace-nowrap">🔍 Tra Cứu nhanh</button>
             <button onclick="switchTab('tab-personal')" class="tab-btn px-4 py-3 font-medium text-gray-600 whitespace-nowrap">🎒 Hoa Của Tôi</button>
+            <button onclick="switchTab('tab-race-summary')" class="tab-btn px-4 py-3 font-medium text-gray-600 whitespace-nowrap">🏎️ Hoa Đua Hội</button>
             <button id="nav-admin-member" onclick="switchTab('tab-members')" class="tab-btn hidden px-4 py-3 font-medium text-gray-600 whitespace-nowrap">👥 Quản Lý Member (Admin)</button>
             <button id="nav-admin-flower" onclick="switchTab('tab-flowers')" class="tab-btn hidden px-4 py-3 font-medium text-gray-600 whitespace-nowrap">🌻 Thêm Hoa (Admin)</button>
         </nav>
@@ -54,6 +55,15 @@
                 <div class="bg-white p-4 rounded-xl shadow">
                     <h3 class="text-lg font-bold mb-3 text-indigo-600">🔎 Tìm theo Tên Hoa</h3>
                     <input type="text" id="search-flower-input" oninput="searchByFlower()" placeholder="Nhập tên hoa để xem ai có..." class="w-full border p-2 rounded mb-4">
+                    
+                    <div id="search-flower-image-container" class="hidden flex items-center gap-3 mb-4 p-2 bg-indigo-50 rounded-lg border border-indigo-100">
+                        <img id="search-flower-img" src="" class="w-16 h-16 object-cover rounded-md shadow-sm">
+                        <div>
+                            <p id="search-flower-name" class="font-bold text-lg"></p>
+                            <p id="search-flower-level" class="text-xs uppercase"></p>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="border p-3 rounded bg-green-50">
                             <h4 class="font-bold text-green-700 mb-2">⭐ Sở Hữu</h4>
@@ -101,6 +111,31 @@
                 </div>
                 <button onclick="savePersonalFlowers()" class="mt-4 bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-700 transition">💾 Lưu Thay Đổi</button>
             </section>
+
+            <section id="tab-race-summary" class="tab-content hidden space-y-6">
+                <div class="bg-white p-4 rounded-xl shadow">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
+                        <h3 class="text-xl font-bold text-indigo-600">🏎️ Danh Sách Hoa Đua Hội Đã Đăng Ký</h3>
+                        <input type="text" id="summary-race-search" oninput="renderRaceSummary()" placeholder="🔍 Tìm nhanh tên hoa đua hội..." class="border p-2 rounded text-sm w-full md:w-64 outline-none focus:ring-2 focus:ring-indigo-400">
+                    </div>
+                    <p class="text-xs text-gray-500 mb-4">Click vào từng loại hoa bên dưới để xem danh sách thành viên đăng ký đua hội.</p>
+                    
+                    <div id="race-flower-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+                </div>
+
+                <div id="race-members-box" class="hidden bg-white p-4 rounded-xl shadow border-2 border-indigo-500">
+                    <h3 id="race-members-title" class="text-lg font-bold mb-3 text-indigo-700"></h3>
+                    <ul id="race-members-list" class="list-decimal pl-5 space-y-1 font-medium text-gray-800"></ul>
+                </div>
+            </section>
+
+            <div id="image-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onclick="closeImageModal()">
+                <div class="bg-white p-4 rounded-xl max-w-sm w-full relative" onclick="event.stopPropagation()">
+                    <button onclick="closeImageModal()" class="absolute top-2 right-2 text-gray-500 hover:text-black font-bold text-xl">✕</button>
+                    <img id="modal-img" src="" class="w-full h-64 object-cover rounded-lg shadow mb-3">
+                    <h4 id="modal-title" class="text-center font-bold text-lg text-gray-800"></h4>
+                </div>
+            </div>
 
             <section id="tab-members" class="tab-content hidden space-y-6">
                 <div class="bg-white p-4 rounded-xl shadow">
@@ -242,7 +277,8 @@
         function renderAll() {
             renderPersonalFlowers();
             renderMemberList();
-            renderAdminFlowerList(); // <-- Thêm dòng này vào
+            renderAdminFlowerList();
+            renderRaceSummary(); // <-- Thêm dòng này vào để tự động cập nhật tab Đua Hội
         }
 
         // ĐĂNG NHẬP / ĐĂNG XUẤT
@@ -287,28 +323,46 @@
 
         // TAB 1: LOGIC TÌM KIẾM NHANH
         function searchByFlower() {
-            const keyword = document.getElementById('search-flower-input').value.toLowerCase();
+            const keyword = document.getElementById('search-flower-input').value.toLowerCase().trim();
             const ownedList = document.getElementById('search-flower-owned');
             const raceList = document.getElementById('search-flower-race');
+            const imgContainer = document.getElementById('search-flower-image-container');
+            
             ownedList.innerHTML = ''; raceList.innerHTML = '';
-            if(!keyword) return;
+            
+            if(!keyword) {
+                imgContainer.classList.add('hidden');
+                return;
+            }
 
             const flower = db.Flowers.find(f => f.name.toLowerCase().includes(keyword));
-            if(!flower) return;
+            if(!flower) {
+                imgContainer.classList.add('hidden');
+                return;
+            }
 
+            // Hiển thị ảnh và thông tin hoa tìm được
+            imgContainer.classList.remove('hidden');
+            document.getElementById('search-flower-img').src = flower.image || 'https://placehold.co/60';
+            document.getElementById('search-flower-name').innerText = flower.name;
+            const lvlElement = document.getElementById('search-flower-level');
+            lvlElement.innerText = `Cấp độ: ${flower.level}`;
+            lvlElement.className = `text-xs uppercase level-${flower.level.replace(' ', '-')}`;
+
+            // Lấy danh sách thành viên sở hữu
             db.OwnedFlowers.filter(o => String(o.flowerId) === String(flower.id)).forEach(o => {
                 const m = db.Members.find(mem => String(mem.id) === String(o.memberId));
                 if(m) ownedList.innerHTML += `<li>${m.ingame} (${m.zaloName})</li>`;
             });
 
+            // Lấy danh sách thành viên đua hội
             db.RaceFlowers.filter(r => String(r.flowerId) === String(flower.id)).forEach(r => {
                 const m = db.Members.find(mem => String(mem.id) === String(r.memberId));
                 if(m) raceList.innerHTML += `<li>${m.ingame} (${m.zaloName})</li>`;
             });
         }
-
         function searchByMember() {
-            const keyword = document.getElementById('search-member-input').value.toLowerCase();
+            const keyword = document.getElementById('search-member-input').value.toLowerCase().trim();
             const ownedList = document.getElementById('search-member-owned');
             const raceList = document.getElementById('search-member-race');
             ownedList.innerHTML = ''; raceList.innerHTML = '';
@@ -319,12 +373,22 @@
 
             db.OwnedFlowers.filter(o => String(o.memberId) === String(member.id)).forEach(o => {
                 const f = db.Flowers.find(fl => String(fl.id) === String(o.flowerId));
-                if(f) ownedList.innerHTML += `<li class="level-${f.level.replace(' ', '-')}">${f.name} [Cấp ${f.level}]</li>`;
+                if(f) {
+                    ownedList.innerHTML += `
+                        <li class="cursor-pointer hover:underline level-${f.level.replace(' ', '-')}" onclick="showImageModal('${f.name}', '${f.image}')">
+                            🌸 ${f.name} <span class="text-xs text-gray-500 italic">(Bấm xem ảnh)</span>
+                        </li>`;
+                }
             });
 
             db.RaceFlowers.filter(r => String(r.memberId) === String(member.id)).forEach(r => {
                 const f = db.Flowers.find(fl => String(fl.id) === String(r.flowerId));
-                if(f) raceList.innerHTML += `<li class="level-${f.level.replace(' ', '-')}">${f.name} [Cấp ${f.level}]</li>`;
+                if(f) {
+                    raceList.innerHTML += `
+                        <li class="cursor-pointer hover:underline level-${f.level.replace(' ', '-')}" onclick="showImageModal('${f.name}', '${f.image}')">
+                            🏎️ ${f.name} <span class="text-xs text-gray-500 italic">(Bấm xem ảnh)</span>
+                        </li>`;
+                }
             });
         }
 
@@ -468,6 +532,79 @@
             document.getElementById('member-zalo').value = '';
             document.getElementById('member-password').value = '';
             document.getElementById('member-form-title').innerText = "➕ Tạo Thành Viên Mới";
+        }
+
+        // Xử lý Popup xem ảnh nhanh chung
+        function showImageModal(name, imageUrl) {
+            document.getElementById('modal-title').innerText = name;
+            document.getElementById('modal-img').src = imageUrl || 'https://placehold.co/300';
+            document.getElementById('image-modal').classList.remove('hidden');
+        }
+
+        function closeImageModal() {
+            document.getElementById('image-modal').classList.add('hidden');
+        }
+
+        // Logic xử lý chính cho TAB HOA ĐUA HỘI MỚI
+        function renderRaceSummary() {
+            const grid = document.getElementById('race-flower-grid');
+            const keyword = document.getElementById('summary-race-search').value.toLowerCase().trim();
+            grid.innerHTML = '';
+
+            // Lấy danh sách ID hoa đã được đăng ký đua hội (loại bỏ trùng lặp)
+            const registeredIds = [...new Set(db.RaceFlowers.map(r => String(r.flowerId)))];
+            
+            // Lọc thông tin chi tiết của các bông hoa đó từ danh sách Flowers gốc
+            let raceFlowers = db.Flowers.filter(f => registeredIds.includes(String(f.id)));
+
+            // Áp dụng bộ lọc tìm kiếm nhanh của người dùng
+            if (keyword) {
+                raceFlowers = raceFlowers.filter(f => f.name.toLowerCase().includes(keyword));
+            }
+
+            if (raceFlowers.length === 0) {
+                grid.innerHTML = `<p class="col-span-full text-center text-gray-500 italic py-4">Chưa có hoa đua hội nào khớp từ khóa</p>`;
+                return;
+            }
+
+            // Render các bông hoa đua hội thành dạng thẻ bài (Card) rất tiện cho mobile bấm chọn
+            raceFlowers.forEach(f => {
+                grid.innerHTML += `
+                    <div onclick="showRaceMembers('${f.id}', '${f.name}')" class="bg-gray-50 border hover:border-indigo-500 rounded-xl p-3 text-center cursor-pointer transition shadow-sm hover:shadow flex flex-col items-center">
+                        <img src="${f.image || 'https://placehold.co/100'}" class="w-16 h-16 object-cover rounded-md mb-2 shadow-xs" onerror="this.src='https://placehold.co/100'">
+                        <p class="font-bold text-sm text-gray-800 line-clamp-1">${f.name}</p>
+                        <p class="text-xs level-${f.level.replace(' ', '-')} uppercase mt-1">${f.level}</p>
+                    </div>
+                `;
+            });
+        }
+
+        // Hàm hiển thị danh sách thành viên đăng ký đua khi click vào một loại hoa cụ thể
+        function showRaceMembers(flowerId, flowerName) {
+            const box = document.getElementById('race-members-box');
+            const title = document.getElementById('race-members-title');
+            const list = document.getElementById('race-members-list');
+            
+            list.innerHTML = '';
+            title.innerText = `🏁 Thành viên đăng ký đua hội hoa: ${flowerName}`;
+
+            // Lọc danh sách thành viên đăng ký đua bông hoa này
+            const registrations = db.RaceFlowers.filter(r => String(r.flowerId) === String(flowerId));
+
+            if (registrations.length === 0) {
+                list.innerHTML = `<li class="text-gray-500 italic list-none">Không có thành viên nào đăng ký đua loại hoa này.</li>`;
+            } else {
+                registrations.forEach(r => {
+                    const m = db.Members.find(mem => String(mem.id) === String(r.memberId));
+                    if (m) {
+                        list.innerHTML += `<li><span class="font-bold text-indigo-600">${m.ingame}</span> (Zalo: ${m.zaloName || 'Chưa cập nhật'})</li>`;
+                    }
+                });
+            }
+
+            // Hiển thị vùng danh sách lên màn hình và cuộn mượt xuống dưới để người dùng dễ nhìn thấy trên điện thoại
+            box.classList.remove('hidden');
+            box.scrollIntoView({ behavior: 'smooth' });
         }
 
         // TAB 4: ADMIN THÊM HOA MỚI
