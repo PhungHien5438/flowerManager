@@ -14,7 +14,10 @@
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
-
+    <div id="loading-screen" class="hidden fixed inset-0 bg-black/50 z-[9999] flex flex-col items-center justify-center text-white font-medium">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-indigo-500 mb-3"></div>
+        <p id="loading-text" class="text-sm bg-gray-900/80 px-4 py-2 rounded-lg shadow-md">🔄 Đang xử lý, vui lòng đợi...</p>
+    </div>
     <div id="login-screen" class="flex items-center justify-center min-h-screen p-4">
         <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
             <h2 class="text-2xl font-bold text-center mb-6 text-indigo-600">ĐĂNG NHẬP HỆ THỐNG</h2>
@@ -272,6 +275,15 @@
 
         let db = { Members: [], Flowers: [], OwnedFlowers: [], RaceFlowers: [] };
         let currentUser = null;
+        // Hàm hiển thị/ẩn Loading tiện lợi
+        function showLoading(text = "Đang xử lý, vui lòng đợi...") {
+            document.getElementById('loading-text').innerText = text;
+            document.getElementById('loading-screen').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-screen').classList.add('hidden');
+        }
 
         // Tải dữ liệu ban đầu khi mở ứng dụng
         window.addEventListener('DOMContentLoaded', () => {
@@ -279,8 +291,10 @@
         });
 
         // Tải dữ liệu từ Google Sheets khi mở trang web
+        // Tải dữ liệu từ Google Sheets khi mở trang web
         async function loadData() {
             if(API_URL.includes("Thay_Link")) return alert("Vui lòng cấu hình URL API Google Sheet!");
+            showLoading("📡 Đang đồng bộ dữ liệu từ Cloud...");
             try {
                 const res = await fetch(API_URL, {
                     method: 'POST',
@@ -289,20 +303,27 @@
                 db = await res.json();
                 renderAll();
             } catch (err) {
-                console.error("Lỗi đồng bộ dữ liệu dữ liệu đầu vào:", err);
+                console.error("Lỗi đồng bộ dữ liệu đầu vào:", err);
+                alert("Không thể tải dữ liệu. Vui lòng kiểm tra lại kết nối mạng hoặc link API!");
+            } finally {
+                hideLoading(); // Luôn luôn tắt loading dù thành công hay thất bại
             }
         }
 
         // Đẩy toàn bộ dữ liệu lên Google Sheet để lưu trữ trực tuyến
         async function syncToCloud() {
+            showLoading("💾 Đang lưu dữ liệu lên Cloud...");
             try {
                 await fetch(API_URL, {
                     method: 'POST',
                     body: JSON.stringify({ action: "saveData", data: db })
                 });
-            } catch(e) { alert("Lưu trữ đám mây thất bại!"); }
+            } catch(e) { 
+                alert("Lưu trữ đám mây thất bại!"); 
+            } finally {
+                hideLoading();
+            }
         }
-
         function renderAll() {
             renderPersonalFlowers();
             renderMemberList();
@@ -495,7 +516,8 @@
         async function savePersonalFlowers() {
             await syncToCloud();
             renderAll();
-            alert("Đã lưu thay đổi kho hoa cá nhân lên Cloud!");
+            // syncToCloud đã tự đóng loading rồi nên ở đây gọi render lại là xong
+            alert("Đã lưu thay đổi kho hoa cá nhân lên Cloud! 🎉");
         }
 
         // TAB 3: HOA ĐUA HỘI TỔNG HỢP
@@ -630,10 +652,10 @@
                 db.Members.push({ id: newId, ingame, zaloName, status, role, password, isDone });
             }
             
-            await syncToCloud();
+            await syncToCloud(); // Hàm này chạy sẽ hiện loading
             clearMemberForm();
             renderAll();
-            alert("Cập nhật thành viên thành công!");
+            alert("Cập nhật thành viên thành công! 👥");
         }
 
         function editMember(id) {
@@ -704,11 +726,11 @@
             const newId = db.Flowers.length > 0 ? Math.max(...db.Flowers.map(f => f.id)) + 1 : 1;
             db.Flowers.push({ id: newId, name, image, level });
             
-            await syncToCloud();
+            await syncToCloud(); // Tự động bật/tắt loading tại đây
             document.getElementById('flower-name').value = '';
             document.getElementById('flower-image').value = '';
             renderAll();
-            alert("Thêm hoa thành công!");
+            alert("Thêm hoa thành công! 🌻");
         }
 
         // MODAL XEM ẢNH HOA TRỰC QUAN
