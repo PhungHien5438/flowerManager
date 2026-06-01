@@ -402,6 +402,7 @@
 
         // TAB 2: GIAO DIỆN CẬP NHẬT HOA CÁ NHÂN
         // Hàm hiển thị danh sách hoa trong tab Cá Nhân
+        // Hàm hiển thị danh sách hoa trong tab Cá Nhân (Đã sửa lỗi mất dữ liệu khi tìm kiếm)
         function renderPersonalFlowers(filteredFlowers = null) {
             if(!currentUser) return;
             const tbody = document.getElementById('personal-flower-table');
@@ -424,8 +425,12 @@
                         <td class="p-2"><img src="${f.image || 'https://placehold.co/40'}" class="w-10 h-10 object-cover rounded" onerror="this.src='https://placehold.co/40'"></td>
                         <td class="p-2 font-semibold text-gray-800">${f.name}</td>
                         <td class="p-2 level-${f.level.replace(' ', '-')}">${f.level.toUpperCase()}</td>
-                        <td class="p-2 text-center"><input type="checkbox" class="own-cb" data-id="${f.id}" ${isOwned ? 'checked' : ''}></td>
-                        <td class="p-2 text-center"><input type="checkbox" class="race-cb" data-id="${f.id}" ${isRace ? 'checked' : ''}></td>
+                        <td class="p-2 text-center">
+                            <input type="checkbox" class="own-cb" data-id="${f.id}" ${isOwned ? 'checked' : ''} onchange="handleCheckboxChange(this, 'owned')">
+                        </td>
+                        <td class="p-2 text-center">
+                            <input type="checkbox" class="race-cb" data-id="${f.id}" ${isRace ? 'checked' : ''} onchange="handleCheckboxChange(this, 'race')">
+                        </td>
                     </tr>
                 `;
             });
@@ -481,21 +486,40 @@
             renderAdminFlowerList(filtered);
         }
 
+        // Hàm xử lý ghi nhận dữ liệu NGAY LẬP TỨC khi bấm tích/bỏ tích (Kể cả khi đang tìm kiếm)
+        function handleCheckboxChange(checkbox, type) {
+            const flowerId = checkbox.dataset.id;
+            const memberId = currentUser.id;
+
+            if (type === 'owned') {
+                if (checkbox.checked) {
+                    // Nếu tích chọn và chưa có trong db thì thêm vào
+                    if (!db.OwnedFlowers.some(o => String(o.memberId) === String(memberId) && String(o.flowerId) === String(flowerId))) {
+                        db.OwnedFlowers.push({ memberId: memberId, flowerId: flowerId });
+                    }
+                } else {
+                    // Nếu bỏ tích thì xóa khỏi db luôn
+                    db.OwnedFlowers = db.OwnedFlowers.filter(o => !(String(o.memberId) === String(memberId) && String(o.flowerId) === String(flowerId)));
+                }
+            } else if (type === 'race') {
+                if (checkbox.checked) {
+                    if (!db.RaceFlowers.some(r => String(r.memberId) === String(memberId) && String(r.flowerId) === String(flowerId))) {
+                        db.RaceFlowers.push({ memberId: memberId, flowerId: flowerId });
+                    }
+                } else {
+                    db.RaceFlowers = db.RaceFlowers.filter(r => !(String(r.memberId) === String(memberId) && String(r.flowerId) === String(flowerId)));
+                }
+            }
+        }
+
+        // Hàm Lưu bây giờ chỉ làm nhiệm vụ duy nhất là đồng bộ dữ liệu có sẵn lên Google Sheet
         async function savePersonalFlowers() {
-            // Lọc bỏ hoa cũ của tài khoản này
-            db.OwnedFlowers = db.OwnedFlowers.filter(o => String(o.memberId) !== String(currentUser.id));
-            db.RaceFlowers = db.RaceFlowers.filter(r => String(r.memberId) !== String(currentUser.id));
-
-            document.querySelectorAll('.own-cb:checked').forEach(cb => {
-                db.OwnedFlowers.push({ memberId: currentUser.id, flowerId: cb.dataset.id });
-            });
-            document.querySelectorAll('.race-cb:checked').forEach(cb => {
-                db.RaceFlowers.push({ memberId: currentUser.id, flowerId: cb.dataset.id });
-            });
-
-            alert("Đang đồng bộ lên Google Sheet...");
+            alert("Đang đồng bộ dữ liệu an toàn lên Google Sheet...");
             await syncToCloud();
             alert("Lưu thông tin thành công!");
+            
+            // Xóa chữ trong ô tìm kiếm về trống để trả lại giao diện ban đầu
+            document.getElementById('personal-search-flower').value = '';
             renderAll();
         }
 
