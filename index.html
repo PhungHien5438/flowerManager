@@ -93,8 +93,14 @@
             </section>
 
             <section id="tab-personal" class="tab-content hidden bg-white p-4 rounded-xl shadow">
-                <h3 class="text-xl font-bold mb-4 text-indigo-600">🎒 Cập nhật kho hoa của bạn</h3>
-                <p class="text-xs text-gray-500 mb-4">Tích chọn những hoa bạn đang có hoặc muốn đăng ký đua hội.</p>
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
+                    <div>
+                        <h3 class="text-xl font-bold text-indigo-600">🎒 Cập nhật kho hoa của bạn</h3>
+                        <p class="text-xs text-gray-500">Tích chọn những hoa bạn đang có hoặc muốn đăng ký đua hội.</p>
+                    </div>
+                    <input type="text" id="personal-search-flower" oninput="filterPersonalFlowerList()" placeholder="🔍 Tìm nhanh tên hoa của bạn..." class="border p-2 rounded text-sm w-full md:w-64 shadow-sm outline-none focus:ring-2 focus:ring-indigo-400">
+                </div>
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse text-sm">
                         <thead>
@@ -393,25 +399,46 @@
         }
 
         // TAB 2: GIAO DIỆN CẬP NHẬT HOA CÁ NHÂN
-        function renderPersonalFlowers() {
+        // Hàm hiển thị danh sách hoa trong tab Cá Nhân
+        function renderPersonalFlowers(filteredFlowers = null) {
             if(!currentUser) return;
             const tbody = document.getElementById('personal-flower-table');
             tbody.innerHTML = '';
 
-            db.Flowers.forEach(f => {
+            // Nếu có bộ lọc tìm kiếm thì dùng danh sách đã lọc, ngược lại dùng toàn bộ danh sách gốc
+            const flowerList = filteredFlowers ? filteredFlowers : db.Flowers;
+
+            if (flowerList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 italic">Không tìm thấy hoa nào phù hợp</td></tr>`;
+                return;
+            }
+
+            flowerList.forEach(f => {
                 const isOwned = db.OwnedFlowers.some(o => String(o.memberId) === String(currentUser.id) && String(o.flowerId) === String(f.id));
                 const isRace = db.RaceFlowers.some(r => String(r.memberId) === String(currentUser.id) && String(r.flowerId) === String(f.id));
 
                 tbody.innerHTML += `
                     <tr class="border-b hover:bg-gray-50">
-                        <td class="p-2"><img src="${f.image || 'https://placehold.co/40'}" class="w-10 h-10 object-cover rounded"></td>
-                        <td class="p-2 font-semibold">${f.name}</td>
+                        <td class="p-2"><img src="${f.image || 'https://placehold.co/40'}" class="w-10 h-10 object-cover rounded" onerror="this.src='https://placehold.co/40'"></td>
+                        <td class="p-2 font-semibold text-gray-800">${f.name}</td>
                         <td class="p-2 level-${f.level.replace(' ', '-')}">${f.level.toUpperCase()}</td>
                         <td class="p-2 text-center"><input type="checkbox" class="own-cb" data-id="${f.id}" ${isOwned ? 'checked' : ''}></td>
                         <td class="p-2 text-center"><input type="checkbox" class="race-cb" data-id="${f.id}" ${isRace ? 'checked' : ''}></td>
                     </tr>
                 `;
             });
+        }
+
+        // Hàm xử lý bộ lọc tìm kiếm nhanh hoa cá nhân
+        function filterPersonalFlowerList() {
+            const keyword = document.getElementById('personal-search-flower').value.toLowerCase().trim();
+            if (!keyword) {
+                renderPersonalFlowers(); // Nếu trống ô tìm kiếm thì hiện toàn bộ
+                return;
+            }
+            // Lọc danh sách hoa có chứa từ khóa tìm kiếm
+            const filtered = db.Flowers.filter(f => f.name.toLowerCase().includes(keyword));
+            renderPersonalFlowers(filtered);
         }
 
         // Hàm hiển thị danh sách hoa trong tab Admin
