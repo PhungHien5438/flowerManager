@@ -155,7 +155,7 @@
             <section id="tab-members" class="tab-content hidden space-y-6">
                 <div class="bg-white p-4 rounded-xl shadow">
                     <h3 class="text-lg font-bold mb-4 text-indigo-600" id="member-form-title">➕ Tạo Thành Viên Mới</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                    <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
                         <input type="hidden" id="member-id">
                         <div>
                             <label class="text-xs font-semibold">Ingame</label>
@@ -182,6 +182,10 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="flex items-center gap-2 pb-2 justify-center border p-2 rounded bg-gray-50 h-[38px]">
+                            <input type="checkbox" id="member-isdone" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                            <label for="member-isdone" class="text-xs font-bold text-gray-700 cursor-pointer select-none">Đã xong đua (isDone)</label>
+                        </div>
                         <div class="flex gap-2">
                             <button onclick="saveMember()" class="w-full bg-indigo-600 text-white p-2 rounded font-bold text-sm">Lưu</button>
                             <button onclick="clearMemberForm()" class="bg-gray-300 p-2 rounded text-sm">Hủy</button>
@@ -198,6 +202,7 @@
                                 <th class="p-2">Zalo</th>
                                 <th class="p-2">Quyền</th>
                                 <th class="p-2">Trạng thái</th>
+                                <th class="p-2 text-center">Đua Hội</th> 
                                 <th class="p-2 text-right">Hành động</th>
                             </tr>
                         </thead>
@@ -346,17 +351,10 @@
             const imgContainer = document.getElementById('search-flower-image-container');
             
             ownedList.innerHTML = ''; raceList.innerHTML = '';
-            
-            if(!keyword) {
-                imgContainer.classList.add('hidden');
-                return;
-            }
+            if(!keyword) { imgContainer.classList.add('hidden'); return; }
 
             const flower = db.Flowers.find(f => f.name.toLowerCase().includes(keyword));
-            if(!flower) {
-                imgContainer.classList.add('hidden');
-                return;
-            }
+            if(!flower) { imgContainer.classList.add('hidden'); return; }
 
             imgContainer.classList.remove('hidden');
             document.getElementById('search-flower-img').src = flower.image || 'https://placehold.co/60';
@@ -365,24 +363,23 @@
             lvlElement.innerText = `Cấp độ: ${flower.level}`;
             lvlElement.className = `text-xs uppercase level-${flower.level.replace(' ', '-')}`;
 
-            // Lấy danh sách thành viên sở hữu (ĐÃ THÊM LỌC STATUS)
+            // Danh sách sở hữu: Chỉ cần hoạt động (isDone = true vẫn hiện ở đây bình thường)
             db.OwnedFlowers.filter(o => String(o.flowerId) === String(flower.id)).forEach(o => {
                 const m = db.Members.find(mem => String(mem.id) === String(o.memberId));
-                // CHỈ HIỂN THỊ NẾU MEMBER ĐANG HOẠT ĐỘNG
                 if(m && m.status === "hoạt động") { 
                     ownedList.innerHTML += `<li>${m.ingame} (${m.zaloName})</li>`;
                 }
             });
 
-            // Lấy danh sách thành viên đua hội (ĐÃ THÊM LỌC STATUS)
+            // Danh sách Đăng ký đua hội: BẮT BUỘC hoạt động VÀ CHƯA DONE (isDone === false)
             db.RaceFlowers.filter(r => String(r.flowerId) === String(flower.id)).forEach(r => {
                 const m = db.Members.find(mem => String(mem.id) === String(r.memberId));
-                // CHỈ HIỂN THỊ NẾU MEMBER ĐANG HOẠT ĐỘNG
-                if(m && m.status === "hoạt động") { 
+                if(m && m.status === "hoạt động" && String(m.isDone).toLowerCase() !== 'true') { 
                     raceList.innerHTML += `<li>${m.ingame} (${m.zaloName})</li>`;
                 }
             });
         }
+        
         function searchByMember() {
             const keyword = document.getElementById('search-member-input').value.toLowerCase().trim();
             const ownedList = document.getElementById('search-member-owned');
@@ -390,10 +387,10 @@
             ownedList.innerHTML = ''; raceList.innerHTML = '';
             if(!keyword) return;
 
-            // ĐÃ THÊM LỌC: Chỉ tìm những member có status là "hoạt động"
             const member = db.Members.find(m => m.ingame.toLowerCase().includes(keyword) && m.status === "hoạt động");
             if(!member) return;
 
+            // Danh sách hoa đang có: Luôn hiện
             db.OwnedFlowers.filter(o => String(o.memberId) === String(member.id)).forEach(o => {
                 const f = db.Flowers.find(fl => String(fl.id) === String(o.flowerId));
                 if(f) {
@@ -403,6 +400,22 @@
                         </li>`;
                 }
             });
+
+            // Danh sách đua hội đăng ký: CHỈ HIỂN THỊ NẾU CHƯA DONE (isDone === false)
+            if (String(member.isDone).toLowerCase() !== 'true') {
+                db.RaceFlowers.filter(r => String(r.memberId) === String(member.id)).forEach(r => {
+                    const f = db.Flowers.find(fl => String(fl.id) === String(r.flowerId));
+                    if(f) {
+                        raceList.innerHTML += `
+                            <li class="cursor-pointer hover:underline level-${f.level.replace(' ', '-')}" onclick="showImageModal('${f.name}', '${f.image}')">
+                                🏎️ ${f.name} <span class="text-xs text-gray-500 italic">(Bấm xem ảnh)</span>
+                            </li>`;
+                    }
+                });
+            } else {
+                raceList.innerHTML = `<li class="text-green-600 italic list-none font-semibold">🏁 Thành viên này đã hoàn thành đua hội tuần này!</li>`;
+            }
+        }
 
             db.RaceFlowers.filter(r => String(r.memberId) === String(member.id)).forEach(r => {
                 const f = db.Flowers.find(fl => String(fl.id) === String(r.flowerId));
@@ -539,16 +552,25 @@
         }
 
         // TAB 3: ADMIN QUẢN LÝ MEMBER
+        // 1. SỬA HÀM HIỂN THỊ DANH SÁCH MEMBER TRONG TAB ADMIN
         function renderMemberList() {
             const tbody = document.getElementById('member-list-table');
             tbody.innerHTML = '';
             db.Members.forEach(m => {
+                // Ép kiểu chuẩn cho isDone từ Sheet
+                const isDoneChecked = (String(m.isDone).toLowerCase() === 'true');
+                
                 tbody.innerHTML += `
                     <tr class="border-b text-xs md:text-sm">
                         <td class="p-2 font-bold">${m.ingame}</td>
                         <td class="p-2">${m.zaloName}</td>
                         <td class="p-2"><span class="px-2 py-0.5 rounded ${m.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-gray-100'}">${m.role}</span></td>
                         <td class="p-2">${m.status}</td>
+                        <td class="p-2 text-center">
+                            <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${isDoneChecked ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}">
+                                ${isDoneChecked ? '🏁 Đã xong' : '⏳ Chưa xong'}
+                            </span>
+                        </td>
                         <td class="p-2 text-right">
                             <button onclick="editMember(${m.id})" class="text-blue-600 hover:underline font-semibold mr-2">Sửa</button>
                         </td>
@@ -557,6 +579,7 @@
             });
         }
 
+        // 2. SỬA HÀM LƯU THÔNG TIN THÀNH VIÊN CỦA ADMIN (Ghi nhận thêm trường isDone)
         async function saveMember() {
             const id = document.getElementById('member-id').value;
             const ingame = document.getElementById('member-ingame').value.trim();
@@ -564,16 +587,18 @@
             const password = document.getElementById('member-password').value.trim();
             const status = document.getElementById('member-status').value;
             const role = document.getElementById('member-role').value;
+            // Lấy giá trị checkbox isDone (true/false)
+            const isDone = document.getElementById('member-isdone').checked; 
 
             if(!ingame || !password) return alert("Vui lòng điền Ingame và Mật khẩu!");
 
-            if(id) { // Chế độ sửa thông tin
+            if(id) { 
                 const index = db.Members.findIndex(m => String(m.id) === String(id));
-                if(index > -1) db.Members[index] = { id, ingame, zaloName, status, role, password };
-            } else { // Chế độ tạo mới
+                if(index > -1) db.Members[index] = { id, ingame, zaloName, status, role, password, isDone };
+            } else { 
                 if(db.Members.some(m => m.ingame === ingame)) return alert("Tên Ingame này đã tồn tại!");
                 const newId = db.Members.length > 0 ? Math.max(...db.Members.map(m => m.id)) + 1 : 1;
-                db.Members.push({ id: newId, ingame, zaloName, status, role, password });
+                db.Members.push({ id: newId, ingame, zaloName, status, role, password, isDone });
             }
             
             await syncToCloud();
@@ -582,6 +607,7 @@
             alert("Cập nhật thành viên thành công!");
         }
 
+        // 3. SỬA HÀM ĐỔ DỮ LIỆU LÊN FORM KHI BẤM SỬA MEMBER
         function editMember(id) {
             const m = db.Members.find(mem => mem.id === id);
             if(!m) return;
@@ -591,14 +617,19 @@
             document.getElementById('member-password').value = m.password;
             document.getElementById('member-status').value = m.status;
             document.getElementById('member-role').value = m.role;
+            // Gán giá trị check cho ô Checkbox
+            document.getElementById('member-isdone').checked = (String(m.isDone).toLowerCase() === 'true');
+            
             document.getElementById('member-form-title').innerText = "✏️ Sửa Thông Tin Member";
         }
 
+        // 4. SỬA HÀM CLEAR FORM FORM MEMBER
         function clearMemberForm() {
             document.getElementById('member-id').value = '';
             document.getElementById('member-ingame').value = '';
             document.getElementById('member-zalo').value = '';
             document.getElementById('member-password').value = '';
+            document.getElementById('member-isdone').checked = false; // Reset checkbox về false
             document.getElementById('member-form-title').innerText = "➕ Tạo Thành Viên Mới";
         }
 
@@ -620,23 +651,20 @@
             const keyword = document.getElementById('summary-race-search').value.toLowerCase().trim();
             grid.innerHTML = '';
 
-            // Lấy danh sách ID các member đang hoạt động trước
-            const activeMemberIds = db.Members.filter(m => m.status === "hoạt động").map(m => String(m.id));
+            // Lọc danh sách ID các member vừa HOẠT ĐỘNG vừa CHƯA DONE
+            const activeAndNotDoneIds = db.Members
+                .filter(m => m.status === "hoạt động" && String(m.isDone).toLowerCase() !== 'true')
+                .map(m => String(m.id));
 
-            // Chỉ lấy các lượt đăng ký đua hội của những member đang hoạt động
-            const activeRaceFlowers = db.RaceFlowers.filter(r => activeMemberIds.includes(String(r.memberId)));
-
-            // Trích xuất danh sách ID hoa (loại bỏ trùng lặp) từ các lượt đăng ký hợp lệ trên
+            // Chỉ tính toán số hoa đua hội dựa trên những người chưa hoàn thành
+            const activeRaceFlowers = db.RaceFlowers.filter(r => activeAndNotDoneIds.includes(String(r.memberId)));
             const registeredIds = [...new Set(activeRaceFlowers.map(r => String(r.flowerId)))];
-            
             let raceFlowers = db.Flowers.filter(f => registeredIds.includes(String(f.id)));
 
-            if (keyword) {
-                raceFlowers = raceFlowers.filter(f => f.name.toLowerCase().includes(keyword));
-            }
+            if (keyword) { raceFlowers = raceFlowers.filter(f => f.name.toLowerCase().includes(keyword)); }
 
             if (raceFlowers.length === 0) {
-                grid.innerHTML = `<p class="col-span-full text-center text-gray-500 italic py-4">Chưa có hoa đua hội nào từ thành viên đang hoạt động</p>`;
+                grid.innerHTML = `<p class="col-span-full text-center text-gray-500 italic py-4">Không có hoa đua hội nào từ thành viên chưa hoàn thành</p>`;
                 return;
             }
 
@@ -658,15 +686,15 @@
             const list = document.getElementById('race-members-list');
             
             list.innerHTML = '';
-            title.innerText = `🏁 Thành viên đua hội: ${flowerName}`;
+            title.innerText = `🏁 Thành viên chưa chạy xong: ${flowerName}`;
 
             const registrations = db.RaceFlowers.filter(r => String(r.flowerId) === String(flowerId));
             let hasActiveMember = false;
 
             registrations.forEach(r => {
                 const m = db.Members.find(mem => String(mem.id) === String(r.memberId));
-                // CHỈ HIỂN THỊ NẾU MEMBER HỢP LỆ VÀ ĐANG HOẠT ĐỘNG
-                if (m && m.status === "hoạt động") {
+                // CHỈ HIỂN THỊ NẾU MEMBER HOẠT ĐỘNG VÀ CHƯA ISDONE
+                if (m && m.status === "hoạt động" && String(m.isDone).toLowerCase() !== 'true') {
                     hasActiveMember = true;
                     list.innerHTML += `
                         <li class="border-b border-gray-100 pb-1 last:border-none">
@@ -677,7 +705,7 @@
             });
 
             if (!hasActiveMember) {
-                list.innerHTML = `<li class="text-gray-500 italic list-none text-center py-4">Chưa có thành viên đang hoạt động nào đăng ký.</li>`;
+                list.innerHTML = `<li class="text-gray-500 italic list-none text-center py-4">Tất cả những người đăng ký hoa này đã hoàn thành! 🎉</li>`;
             }
 
             modal.classList.remove('hidden');
