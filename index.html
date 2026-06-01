@@ -358,7 +358,6 @@
                 return;
             }
 
-            // Hiển thị ảnh và thông tin hoa tìm được
             imgContainer.classList.remove('hidden');
             document.getElementById('search-flower-img').src = flower.image || 'https://placehold.co/60';
             document.getElementById('search-flower-name').innerText = flower.name;
@@ -366,16 +365,22 @@
             lvlElement.innerText = `Cấp độ: ${flower.level}`;
             lvlElement.className = `text-xs uppercase level-${flower.level.replace(' ', '-')}`;
 
-            // Lấy danh sách thành viên sở hữu
+            // Lấy danh sách thành viên sở hữu (ĐÃ THÊM LỌC STATUS)
             db.OwnedFlowers.filter(o => String(o.flowerId) === String(flower.id)).forEach(o => {
                 const m = db.Members.find(mem => String(mem.id) === String(o.memberId));
-                if(m) ownedList.innerHTML += `<li>${m.ingame} (${m.zaloName})</li>`;
+                // CHỈ HIỂN THỊ NẾU MEMBER ĐANG HOẠT ĐỘNG
+                if(m && m.status === "hoạt động") { 
+                    ownedList.innerHTML += `<li>${m.ingame} (${m.zaloName})</li>`;
+                }
             });
 
-            // Lấy danh sách thành viên đua hội
+            // Lấy danh sách thành viên đua hội (ĐÃ THÊM LỌC STATUS)
             db.RaceFlowers.filter(r => String(r.flowerId) === String(flower.id)).forEach(r => {
                 const m = db.Members.find(mem => String(mem.id) === String(r.memberId));
-                if(m) raceList.innerHTML += `<li>${m.ingame} (${m.zaloName})</li>`;
+                // CHỈ HIỂN THỊ NẾU MEMBER ĐANG HOẠT ĐỘNG
+                if(m && m.status === "hoạt động") { 
+                    raceList.innerHTML += `<li>${m.ingame} (${m.zaloName})</li>`;
+                }
             });
         }
         function searchByMember() {
@@ -385,7 +390,8 @@
             ownedList.innerHTML = ''; raceList.innerHTML = '';
             if(!keyword) return;
 
-            const member = db.Members.find(m => m.ingame.toLowerCase().includes(keyword));
+            // ĐÃ THÊM LỌC: Chỉ tìm những member có status là "hoạt động"
+            const member = db.Members.find(m => m.ingame.toLowerCase().includes(keyword) && m.status === "hoạt động");
             if(!member) return;
 
             db.OwnedFlowers.filter(o => String(o.memberId) === String(member.id)).forEach(o => {
@@ -608,28 +614,32 @@
         }
 
         // Logic xử lý chính cho TAB HOA ĐUA HỘI MỚI
+        // Logic xử lý chính cho TAB HOA ĐUA HỘI (Đã lọc bỏ member ngưng hoạt động)
         function renderRaceSummary() {
             const grid = document.getElementById('race-flower-grid');
             const keyword = document.getElementById('summary-race-search').value.toLowerCase().trim();
             grid.innerHTML = '';
 
-            // Lấy danh sách ID hoa đã được đăng ký đua hội (loại bỏ trùng lặp)
-            const registeredIds = [...new Set(db.RaceFlowers.map(r => String(r.flowerId)))];
+            // Lấy danh sách ID các member đang hoạt động trước
+            const activeMemberIds = db.Members.filter(m => m.status === "hoạt động").map(m => String(m.id));
+
+            // Chỉ lấy các lượt đăng ký đua hội của những member đang hoạt động
+            const activeRaceFlowers = db.RaceFlowers.filter(r => activeMemberIds.includes(String(r.memberId)));
+
+            // Trích xuất danh sách ID hoa (loại bỏ trùng lặp) từ các lượt đăng ký hợp lệ trên
+            const registeredIds = [...new Set(activeRaceFlowers.map(r => String(r.flowerId)))];
             
-            // Lọc thông tin chi tiết của các bông hoa đó từ danh sách Flowers gốc
             let raceFlowers = db.Flowers.filter(f => registeredIds.includes(String(f.id)));
 
-            // Áp dụng bộ lọc tìm kiếm nhanh của người dùng
             if (keyword) {
                 raceFlowers = raceFlowers.filter(f => f.name.toLowerCase().includes(keyword));
             }
 
             if (raceFlowers.length === 0) {
-                grid.innerHTML = `<p class="col-span-full text-center text-gray-500 italic py-4">Chưa có hoa đua hội nào khớp từ khóa</p>`;
+                grid.innerHTML = `<p class="col-span-full text-center text-gray-500 italic py-4">Chưa có hoa đua hội nào từ thành viên đang hoạt động</p>`;
                 return;
             }
 
-            // Render các bông hoa đua hội thành dạng thẻ bài (Card) rất tiện cho mobile bấm chọn
             raceFlowers.forEach(f => {
                 grid.innerHTML += `
                     <div onclick="showRaceMembers('${f.id}', '${f.name}')" class="bg-gray-50 border hover:border-indigo-500 rounded-xl p-3 text-center cursor-pointer transition shadow-sm hover:shadow flex flex-col items-center">
@@ -641,8 +651,7 @@
             });
         }
 
-        // Hàm hiển thị danh sách thành viên đăng ký đua khi click vào một loại hoa cụ thể
-        // Hàm hiển thị POPUP danh sách thành viên đăng ký đua khi click vào một loại hoa
+        // Hàm hiển thị POPUP danh sách thành viên đăng ký đua (Đã lọc bỏ member ngưng hoạt động)
         function showRaceMembers(flowerId, flowerName) {
             const modal = document.getElementById('race-members-modal');
             const title = document.getElementById('race-members-title');
@@ -651,25 +660,26 @@
             list.innerHTML = '';
             title.innerText = `🏁 Thành viên đua hội: ${flowerName}`;
 
-            // Lọc danh sách thành viên đăng ký đua bông hoa này từ database
             const registrations = db.RaceFlowers.filter(r => String(r.flowerId) === String(flowerId));
+            let hasActiveMember = false;
 
-            if (registrations.length === 0) {
-                list.innerHTML = `<li class="text-gray-500 italic list-none text-center py-4">Chưa có thành viên nào đăng ký đua loại hoa này.</li>`;
-            } else {
-                registrations.forEach(r => {
-                    const m = db.Members.find(mem => String(mem.id) === String(r.memberId));
-                    if (m) {
-                        list.innerHTML += `
-                            <li class="border-b border-gray-100 pb-1 last:border-none">
-                                <span class="font-bold text-indigo-600">${m.ingame}</span> 
-                                <span class="text-xs text-gray-500 block md:inline md:ml-2">(Zalo: ${m.zaloName || 'Trống'})</span>
-                            </li>`;
-                    }
-                });
+            registrations.forEach(r => {
+                const m = db.Members.find(mem => String(mem.id) === String(r.memberId));
+                // CHỈ HIỂN THỊ NẾU MEMBER HỢP LỆ VÀ ĐANG HOẠT ĐỘNG
+                if (m && m.status === "hoạt động") {
+                    hasActiveMember = true;
+                    list.innerHTML += `
+                        <li class="border-b border-gray-100 pb-1 last:border-none">
+                            <span class="font-bold text-indigo-600">${m.ingame}</span> 
+                            <span class="text-xs text-gray-500 block md:inline md:ml-2">(Zalo: ${m.zaloName || 'Trống'})</span>
+                        </li>`;
+                }
+            });
+
+            if (!hasActiveMember) {
+                list.innerHTML = `<li class="text-gray-500 italic list-none text-center py-4">Chưa có thành viên đang hoạt động nào đăng ký.</li>`;
             }
 
-            // Kích hoạt hiển thị Popup lên màn hình
             modal.classList.remove('hidden');
         }
 
