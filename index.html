@@ -124,14 +124,23 @@
                         <h3 class="text-xl font-bold text-indigo-600">🏎️ Danh Sách Hoa Đua Hội Đã Đăng Ký</h3>
                         <input type="text" id="summary-race-search" oninput="renderRaceSummary()" placeholder="🔍 Tìm nhanh tên hoa đua hội..." class="border p-2 rounded text-sm w-full md:w-64 outline-none focus:ring-2 focus:ring-indigo-400">
                     </div>
-                    <p class="text-xs text-gray-500 mb-4">Click vào từng loại hoa bên dưới để xem danh sách thành viên đăng ký đua hội.</p>
+                    <p class="text-xs text-gray-500 mb-4">Click vào từng loại hoa bên dưới để xem nhanh danh sách thành viên đăng ký.</p>
                     
                     <div id="race-flower-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
                 </div>
 
-                <div id="race-members-box" class="hidden bg-white p-4 rounded-xl shadow border-2 border-indigo-500">
-                    <h3 id="race-members-title" class="text-lg font-bold mb-3 text-indigo-700"></h3>
-                    <ul id="race-members-list" class="list-decimal pl-5 space-y-1 font-medium text-gray-800"></ul>
+                <div id="race-members-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onclick="closeRaceMembersModal()">
+                    <div class="bg-white p-6 rounded-xl max-w-md w-full relative max-h-[80vh] flex flex-col" onclick="event.stopPropagation()">
+                        <button onclick="closeRaceMembersModal()" class="absolute top-3 right-4 text-gray-400 hover:text-gray-600 font-bold text-2xl">✕</button>
+                        
+                        <h3 id="race-members-title" class="text-lg font-bold mb-4 pr-6 text-indigo-700 border-b pb-2"></h3>
+                        
+                        <div class="overflow-y-auto pr-1 flex-1">
+                            <ul id="race-members-list" class="list-decimal pl-5 space-y-2 font-medium text-gray-800 text-sm md:text-base"></ul>
+                        </div>
+                        
+                        <button onclick="closeRaceMembersModal()" class="mt-4 w-full bg-indigo-600 text-white p-2 rounded-lg font-semibold hover:bg-indigo-700 transition">Đóng</button>
+                    </div>
                 </div>
             </section>
 
@@ -633,31 +642,40 @@
         }
 
         // Hàm hiển thị danh sách thành viên đăng ký đua khi click vào một loại hoa cụ thể
+        // Hàm hiển thị POPUP danh sách thành viên đăng ký đua khi click vào một loại hoa
         function showRaceMembers(flowerId, flowerName) {
-            const box = document.getElementById('race-members-box');
+            const modal = document.getElementById('race-members-modal');
             const title = document.getElementById('race-members-title');
             const list = document.getElementById('race-members-list');
             
             list.innerHTML = '';
-            title.innerText = `🏁 Thành viên đăng ký đua hội hoa: ${flowerName}`;
+            title.innerText = `🏁 Thành viên đua hội: ${flowerName}`;
 
-            // Lọc danh sách thành viên đăng ký đua bông hoa này
+            // Lọc danh sách thành viên đăng ký đua bông hoa này từ database
             const registrations = db.RaceFlowers.filter(r => String(r.flowerId) === String(flowerId));
 
             if (registrations.length === 0) {
-                list.innerHTML = `<li class="text-gray-500 italic list-none">Không có thành viên nào đăng ký đua loại hoa này.</li>`;
+                list.innerHTML = `<li class="text-gray-500 italic list-none text-center py-4">Chưa có thành viên nào đăng ký đua loại hoa này.</li>`;
             } else {
                 registrations.forEach(r => {
                     const m = db.Members.find(mem => String(mem.id) === String(r.memberId));
                     if (m) {
-                        list.innerHTML += `<li><span class="font-bold text-indigo-600">${m.ingame}</span> (Zalo: ${m.zaloName || 'Chưa cập nhật'})</li>`;
+                        list.innerHTML += `
+                            <li class="border-b border-gray-100 pb-1 last:border-none">
+                                <span class="font-bold text-indigo-600">${m.ingame}</span> 
+                                <span class="text-xs text-gray-500 block md:inline md:ml-2">(Zalo: ${m.zaloName || 'Trống'})</span>
+                            </li>`;
                     }
                 });
             }
 
-            // Hiển thị vùng danh sách lên màn hình và cuộn mượt xuống dưới để người dùng dễ nhìn thấy trên điện thoại
-            box.classList.remove('hidden');
-            box.scrollIntoView({ behavior: 'smooth' });
+            // Kích hoạt hiển thị Popup lên màn hình
+            modal.classList.remove('hidden');
+        }
+
+        // Hàm tắt Popup danh sách đua hội
+        function closeRaceMembersModal() {
+            document.getElementById('race-members-modal').classList.add('hidden');
         }
 
         // TAB 4: ADMIN THÊM HOA MỚI
