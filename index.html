@@ -3,647 +3,431 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Quản Lý Hoa Hội Cloud</title>
-    <link rel="icon" href="data:,">
+    <title>Quản Lý Hoa Hội Nhóm</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .level-đỏ { color: #ef4444; font-weight: bold; }
+        .level-cam { color: #f97316; font-weight: bold; }
+        .level-xanh-lam { color: #3b82f6; font-weight: bold; }
+        .level-xanh-lá { color: #22c55e; font-weight: bold; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen pb-12">
+<body class="bg-gray-100 text-gray-800 font-sans">
 
-    <div id="login-screen" class="flex items-center justify-center min-h-screen px-4">
-        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h2 class="text-2xl font-bold text-center text-indigo-600 mb-6">ĐĂNG NHẬP HỆ THỐNG (CLOUD)</h2>
+    <div id="login-screen" class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
+            <h2 class="text-2xl font-bold text-center mb-6 text-indigo-600">ĐĂNG NHẬP HỆ THỐNG</h2>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Tên Ingame</label>
-                    <input type="text" id="login-username" class="mt-1 block w-full p-2 border rounded-md">
+                    <label class="block text-sm font-medium mb-1">Tên Ingame</label>
+                    <input type="text" id="login-ingame" class="w-full border p-2 rounded focus:ring-2 focus:ring-indigo-400 outline-none">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Mật khẩu</label>
-                    <input type="password" id="login-password" class="mt-1 block w-full p-2 border rounded-md">
+                    <label class="block text-sm font-medium mb-1">Mật khẩu</label>
+                    <input type="password" id="login-password" class="w-full border p-2 rounded focus:ring-2 focus:ring-indigo-400 outline-none">
                 </div>
-                <button onclick="handleLogin()" class="w-full bg-indigo-600 text-white p-2 rounded-md font-bold hover:bg-indigo-700">Đăng Nhập</button>
-                <p id="login-error" class="text-red-500 text-sm text-center hidden">Sai tài khoản hoặc mật khẩu!</p>
+                <button onclick="handleLogin()" class="w-full bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700 transition font-semibold">Đăng Nhập</button>
             </div>
         </div>
     </div>
 
-    <div id="main-screen" class="hidden">
-        <nav class="bg-indigo-600 text-white p-4 sticky top-0 z-50 shadow-md">
-            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-                <div class="flex items-center justify-between w-full md:w-auto">
-                    <h1 class="text-xl font-bold">Quản Lý Hoa Hội Cloud ☁️</h1>
-                    <span id="user-tag" class="bg-indigo-800 px-3 py-1 rounded text-xs md:hidden"></span>
-                </div>
-                <div class="flex flex-wrap gap-2 justify-center" id="nav-tabs">
-                    <button onclick="switchTab('tab-search')" class="tab-btn bg-indigo-700 px-3 py-1.5 rounded text-sm font-medium">Tìm Kiếm</button>
-                    <button onclick="switchTab('tab-my-flower')" class="tab-btn hover:bg-indigo-700 px-3 py-1.5 rounded text-sm font-medium">Hoa của tôi</button>
-                    <button id="nav-admin-member" onclick="switchTab('tab-admin-member')" class="tab-btn hover:bg-indigo-700 px-3 py-1.5 rounded text-sm font-medium hidden">Quản lý Member</button>
-                    <button id="nav-admin-flower" onclick="switchTab('tab-admin-flower')" class="tab-btn hover:bg-indigo-700 px-3 py-1.5 rounded text-sm font-medium hidden">Quản lý Hoa</button>
-                </div>
-                <div class="hidden md:flex items-center gap-4">
-                    <span id="user-tag-pc" class="bg-indigo-800 px-3 py-1 rounded text-sm"></span>
-                    <button onclick="handleLogout()" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm font-medium">Đăng xuất</button>
-                </div>
-                <button onclick="handleLogout()" class="w-full md:hidden bg-red-500 hover:bg-red-600 py-1.5 rounded text-sm font-medium">Đăng xuất</button>
+    <div id="main-screen" class="hidden min-h-screen flex flex-col">
+        <header class="bg-indigo-600 text-white p-4 shadow-md flex justify-between items-center flex-wrap gap-2">
+            <h1 class="text-xl font-bold">🌸 Quản Lý Hoa Hội</h1>
+            <div class="flex items-center gap-4">
+                <span id="user-info" class="italic"></span>
+                <button onclick="handleLogout()" class="bg-red-500 px-3 py-1 rounded text-sm hover:bg-red-600 transition">Đăng xuất</button>
             </div>
+        </header>
+
+        <nav class="bg-white shadow flex border-b overflow-x-auto text-sm md:text-base">
+            <button onclick="switchTab('tab-search')" class="tab-btn px-4 py-3 font-medium text-indigo-600 border-b-2 border-indigo-600 whitespace-nowrap">🔍 Tra Cứu nhanh</button>
+            <button onclick="switchTab('tab-personal')" class="tab-btn px-4 py-3 font-medium text-gray-600 whitespace-nowrap">🎒 Hoa Của Tôi</button>
+            <button id="nav-admin-member" onclick="switchTab('tab-members')" class="tab-btn hidden px-4 py-3 font-medium text-gray-600 whitespace-nowrap">👥 Quản Lý Member (Admin)</button>
+            <button id="nav-admin-flower" onclick="switchTab('tab-flowers')" class="tab-btn hidden px-4 py-3 font-medium text-gray-600 whitespace-nowrap">🌻 Thêm Hoa (Admin)</button>
         </nav>
 
-        <div class="max-w-7xl mx-auto p-4 mt-4">
-            <div id="tab-search" class="tab-content active space-y-6">
-                <div class="bg-white p-4 rounded-lg shadow space-y-4">
-                    <h2 class="text-lg font-bold border-b pb-2 text-gray-800">🔍 BỘ LỌC TRA CỨU</h2>
+        <main class="p-4 flex-1 max-w-6xl w-full mx-auto">
+            
+            <section id="tab-search" class="tab-content space-y-6">
+                <div class="bg-white p-4 rounded-xl shadow">
+                    <h3 class="text-lg font-bold mb-3 text-indigo-600">🔎 Tìm theo Tên Hoa</h3>
+                    <input type="text" id="search-flower-input" oninput="searchByFlower()" placeholder="Nhập tên hoa để xem ai có..." class="w-full border p-2 rounded mb-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        
+                        <div class="border p-3 rounded bg-green-50">
+                            <h4 class="font-bold text-green-700 mb-2">⭐ Sở Hữu</h4>
+                            <ul id="search-flower-owned" class="list-disc pl-5 space-y-1"></ul>
+                        </div>
+                        <div class="border p-3 rounded bg-amber-50">
+                            <h4 class="font-bold text-amber-700 mb-2">🏆 Đăng Ký Đua Hội</h4>
+                            <ul id="search-flower-race" class="list-disc pl-5 space-y-1"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow">
+                    <h3 class="text-lg font-bold mb-3 text-indigo-600">🔎 Tìm theo Tên Member (Ingame)</h3>
+                    <input type="text" id="search-member-input" oninput="searchByMember()" placeholder="Nhập tên thành viên..." class="w-full border p-2 rounded mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="border p-3 rounded bg-blue-50">
+                            <h4 class="font-bold text-blue-700 mb-2">🌸 Hoa Đang Có</h4>
+                            <ul id="search-member-owned" class="list-disc pl-5 space-y-1"></ul>
+                        </div>
+                        <div class="border p-3 rounded bg-purple-50">
+                            <h4 class="font-bold text-purple-700 mb-2">🏎️ Đua Hội Đăng Ký</h4>
+                            <ul id="search-member-race" class="list-disc pl-5 space-y-1"></ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-personal" class="tab-content hidden bg-white p-4 rounded-xl shadow">
+                <h3 class="text-xl font-bold mb-4 text-indigo-600">🎒 Cập nhật kho hoa của bạn</h3>
+                <p class="text-xs text-gray-500 mb-4">Tích chọn những hoa bạn đang có hoặc muốn đăng ký đua hội.</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-gray-100 border-b">
+                                <th class="p-2">Hình ảnh</th>
+                                <th class="p-2">Tên Hoa</th>
+                                <th class="p-2">Phân loại</th>
+                                <th class="p-2 text-center">Sở hữu</th>
+                                <th class="p-2 text-center">Đua Hội</th>
+                            </tr>
+                        </thead>
+                        <tbody id="personal-flower-table"></tbody>
+                    </table>
+                </div>
+                <button onclick="savePersonalFlowers()" class="mt-4 bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-700 transition">💾 Lưu Thay Đổi</button>
+            </section>
+
+            <section id="tab-members" class="tab-content hidden space-y-6">
+                <div class="bg-white p-4 rounded-xl shadow">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-600" id="member-form-title">➕ Tạo Thành Viên Mới</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                        <input type="hidden" id="member-id">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tìm kiếm Hoa</label>
-                            <div class="relative">
-                                <input type="text" id="search-flower-input" oninput="filterFlowerDropdown()" onfocus="showFlowerDropdown()" placeholder="-- Gõ tìm kiếm hoa... --" class="block w-full p-2 border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <select id="search-flower-select" onchange="selectFlowerOption()" size="5" class="absolute left-0 right-0 z-50 hidden mt-1 border rounded-md bg-white shadow-lg text-sm max-h-48 overflow-y-auto"></select>
+                            <label class="text-xs font-semibold">Ingame</label>
+                            <input type="text" id="member-ingame" class="w-full border p-2 rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold">Tên Zalo</label>
+                            <input type="text" id="member-zalo" class="w-full border p-2 rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold">Mật khẩu</label>
+                            <input type="password" id="member-password" class="w-full border p-2 rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold">Trạng thái / Vai trò</label>
+                            <div class="flex gap-1">
+                                <select id="member-status" class="w-full border p-1 rounded text-xs">
+                                    <option value="hoạt động">Hoạt động</option>
+                                    <option value="ngưng hoạt động">Ngưng</option>
+                                </select>
+                                <select id="member-role" class="w-full border p-1 rounded text-xs">
+                                    <option value="user">User</option>
+                                    <option value="admin">Admin</option>
+                                </select>
                             </div>
                         </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Tìm kiếm Member</label>
-                            <div class="relative">
-                                <input type="text" id="search-member-input" oninput="filterMemberDropdown()" onfocus="showMemberDropdown()" placeholder="-- Gõ tìm kiếm member... --" class="block w-full p-2 border rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <select id="search-member-select" onchange="selectMemberOption()" size="5" class="absolute left-0 right-0 z-50 hidden mt-1 border rounded-md bg-white shadow-lg text-sm max-h-48 overflow-y-auto"></select>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white p-4 rounded-lg shadow" id="search-flower-result-box">
-                        <h3 class="font-bold text-indigo-600 border-b pb-2 mb-3">🌸 KẾT QUẢ THEO HOA</h3>
-                        <div class="mb-4">
-                            <h4 class="text-sm font-bold text-gray-600">👥 Thành viên sở hữu:</h4>
-                            <ul id="list-flower-own" class="list-disc pl-5 text-gray-700 mt-1 space-y-1"></ul>
-                        </div>
-                        <div>
-                            <h4 class="text-sm font-bold text-orange-600">🏁 Thành viên đăng ký đua hội:</h4>
-                            <ul id="list-flower-race" class="list-disc pl-5 text-gray-700 mt-1 space-y-1"></ul>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-4 rounded-lg shadow" id="search-member-result-box">
-                        <h3 class="font-bold text-indigo-600 border-b pb-2 mb-3">👤 KẾT QUẢ THEO MEMBER</h3>
-                        <div class="mb-4">
-                            <h4 class="text-sm font-bold text-gray-600">🌸 Hoa đang sở hữu:</h4>
-                            <div id="list-member-own" class="flex flex-wrap gap-2 mt-2"></div>
-                        </div>
-                        <div>
-                            <h4 class="text-sm font-bold text-orange-600">🏁 Hoa đăng ký đua hội:</h4>
-                            <div id="list-member-race" class="flex flex-wrap gap-2 mt-2"></div>
+                        <div class="flex gap-2">
+                            <button onclick="saveMember()" class="w-full bg-indigo-600 text-white p-2 rounded font-bold text-sm">Lưu</button>
+                            <button onclick="clearMemberForm()" class="bg-gray-300 p-2 rounded text-sm">Hủy</button>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div id="tab-my-flower" class="tab-content space-y-6">
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <h2 class="text-lg font-bold border-b pb-2 mb-4 text-gray-800">📝 CẬP NHẬT HOA CỦA BẢN THÂN</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <h3 class="font-bold text-gray-700 mb-2">🌸 Hoa bạn đang sở hữu:</h3>
-                            <div id="my-own-checkboxes" class="space-y-2 max-h-60 overflow-y-auto border p-2 rounded"></div>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-orange-600 mb-2">🏁 Đăng ký đua hội:</h3>
-                            <div id="my-race-checkboxes" class="space-y-2 max-h-60 overflow-y-auto border p-2 rounded"></div>
-                        </div>
-                    </div>
-                    <button onclick="saveMyFlowers()" class="mt-4 bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-700">Lưu Cập Nhật</button>
-                </div>
-            </div>
-
-            <div id="tab-admin-member" class="tab-content space-y-6">
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <h2 class="text-lg font-bold border-b pb-2 mb-4 text-gray-800" id="member-form-title">THÊM MEMBER MỚI</h2>
-                    <input type="hidden" id="member-id">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label class="text-sm font-medium">Ingame</label>
-                            <input type="text" id="mem-ingame" class="mt-1 block w-full p-2 border rounded-md">
-                        </div>
-                        <div>
-                            <label class="text-sm font-medium">Tên Zalo</label>
-                            <input type="text" id="mem-zalo" class="mt-1 block w-full p-2 border rounded-md">
-                        </div>
-                        <div>
-                            <label class="text-sm font-medium">Mật khẩu</label>
-                            <input type="password" id="mem-password" class="mt-1 block w-full p-2 border rounded-md">
-                        </div>
-                        <div>
-                            <label class="text-sm font-medium">Trạng thái</label>
-                            <select id="mem-status" class="mt-1 block w-full p-2 border rounded-md">
-                                <option value="Hoạt động">Hoạt động</option>
-                                <option value="Ngưng hoạt động">Ngưng hoạt động</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-sm font-medium">Vai trò (Role)</label>
-                            <select id="mem-role" class="mt-1 block w-full p-2 border rounded-md">
-                                <option value="user">User</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mt-4 flex gap-2">
-                        <button onclick="saveMember()" class="bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700">Lưu Thành Viên</button>
-                        <button onclick="resetMemberForm()" class="bg-gray-400 text-white px-4 py-2 rounded font-bold hover:bg-gray-500">Hủy</button>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-lg shadow overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-[600px]">
+                <div class="bg-white p-4 rounded-xl shadow overflow-x-auto">
+                    <h3 class="text-lg font-bold mb-3 text-gray-700">Danh Sách Thành Viên</h3>
+                    <table class="w-full text-sm text-left border-collapse">
                         <thead>
                             <tr class="bg-gray-100 border-b">
                                 <th class="p-2">Ingame</th>
                                 <th class="p-2">Zalo</th>
-                                <th class="p-2">Role</th>
+                                <th class="p-2">Quyền</th>
                                 <th class="p-2">Trạng thái</th>
-                                <th class="p-2">Thao tác</th>
+                                <th class="p-2 text-right">Hành động</th>
                             </tr>
                         </thead>
-                        <tbody id="member-table-body"></tbody>
+                        <tbody id="member-list-table"></tbody>
                     </table>
                 </div>
-            </div>
+            </section>
 
-            <div id="tab-admin-flower" class="tab-content space-y-6">
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <h2 class="text-lg font-bold border-b pb-2 mb-4 text-gray-800">NHẬP THÔNG TIN HOA MỚI</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <section id="tab-flowers" class="tab-content hidden space-y-6">
+                <div class="bg-white p-4 rounded-xl shadow">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-600">🌻 Nhập Thông Tin Hoa Mới</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                         <div>
-                            <label class="text-sm font-medium">Tên hoa</label>
-                            <input type="text" id="flower-name" class="mt-1 block w-full p-2 border rounded-md">
+                            <label class="text-xs font-semibold">Tên Hoa</label>
+                            <input type="text" id="flower-name" class="w-full border p-2 rounded text-sm">
                         </div>
                         <div>
-                            <label class="text-sm font-medium">Cấp độ (Level)</label>
-                            <select id="flower-level" class="mt-1 block w-full p-2 border rounded-md">
-                                <option value="đỏ">Đỏ 🔴</option>
-                                <option value="cam">Cam 🟠</option>
-                                <option value="xanh lam">Xanh Lam 🔵</option>
-                                <option value="xanh lá">Xanh Lá 🟢</option>
+                            <label class="text-xs font-semibold">Link Ảnh (URL)</label>
+                            <input type="text" id="flower-image" placeholder="https://..." class="w-full border p-2 rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold">Cấp độ (Màu)</label>
+                            <select id="flower-level" class="w-full border p-2 rounded text-sm">
+                                <option value="đỏ">Đỏ</option>
+                                <option value="cam">Cam</option>
+                                <option value="xanh lam">Xanh Lam</option>
+                                <option value="xanh lá">Xanh Lá</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="text-sm font-medium">Link Hình ảnh (URL)</label>
-                            <input type="text" id="flower-image" placeholder="https://..." class="mt-1 block w-full p-2 border rounded-md">
-                        </div>
+                        <button onclick="addFlower()" class="bg-indigo-600 text-white p-2 rounded font-bold text-sm">Thêm Hoa</button>
                     </div>
-                    <button onclick="saveFlower()" class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700">Thêm Hoa</button>
                 </div>
+            </section>
 
-                <div class="bg-white p-4 rounded-lg shadow overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-[500px]">
-                        <thead>
-                            <tr class="bg-gray-100 border-b">
-                                <th class="p-2">Hình ảnh</th>
-                                <th class="p-2">Tên hoa</th>
-                                <th class="p-2">Cấp độ</th>
-                                <th class="p-2">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody id="flower-table-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+        </main>
     </div>
-
-    <div id="flower-image-modal" class="fixed inset-0 bg-black/50 z-[9999] hidden flex items-center justify-center p-4" onclick="closeFlowerModal()">
-        <div class="bg-white rounded-lg max-w-sm w-full p-4 relative shadow-2xl" onclick="event.stopPropagation()">
-            <button onclick="closeFlowerModal()" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-xl font-bold">&times;</button>
-            <h3 id="modal-flower-name" class="text-center font-bold text-gray-800 mb-2 uppercase text-sm"></h3>
-            <div class="w-full h-64 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                <img id="modal-flower-img" src="" alt="Ảnh hoa" class="w-full h-full object-cover" onerror="this.src='https://picsum.photos/300'">
-            </div>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDwAtErbJDAYQxsNgw0Q2w-bkJnkr8ueyU",
-            authDomain: "flower-database-6e607.firebaseapp.com",
-            projectId: "flower-database-6e607",
-            storageBucket: "flower-database-6e607.firebasestorage.app",
-            messagingSenderId: "620480393865",
-            appId: "1:620480393865:web:146eb73f401381d9f3cc58",
-            measurementId: "G-B1W3CWY8J0"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const firestoreDB = getFirestore(app);
-        const dbDocRef = doc(firestoreDB, "database", "flower_guild_db");
-
-        window.db = { members: [], flowers: [] };
-        window.currentUser = null;
-
-        onSnapshot(dbDocRef, (docSnap) => {
-            if (docSnap.exists()) {
-                window.db = docSnap.data();
-                console.log("🟢 [Firebase] Đã kết nối và đồng bộ dữ liệu vĩnh viễn.");
-                
-                if (sessionStorage.getItem("loggedUserIngame")) {
-                    if (typeof window.checkAutoLogin === "function") {
-                        window.checkAutoLogin();
-                    } else if (typeof checkAutoLogin === "function") {
-                        checkAutoLogin();
-                    }
-                } else if (window.currentUser) {
-                    if (typeof setupSearchDropdowns === "function") setupSearchDropdowns();
-                    if (typeof renderMyFlowerTab === "function") renderMyFlowerTab();
-                    if (typeof renderAdminMembers === "function") renderAdminMembers();
-                    if (typeof renderAdminFlowers === "function") renderAdminFlowers();
-                }
-            } else {
-                console.log("🟡 [Firebase] Cấu trúc trống.");
-                window.db = { members: [], flowers: [] };
-                setDoc(dbDocRef, window.db);
-            }
-        }, (error) => {
-            console.error("🔴 [Firebase] Lỗi kết nối đám mây: ", error.message);
-        });
-
-        window.saveDBtoCloud = async function() {
-            if (window.db) {
-                await setDoc(dbDocRef, window.db);
-                console.log("🚀 Đã đồng bộ dữ liệu mới lên Cloud!");
-            }
-        }
-    </script>
 
     <script>
-        // --- ĐĂNG NHẬP / ĐĂNG XUẤT & ĐỒNG BỘ F5 ---
+        // ĐƯỜNG DẪN ĐẾN GOOGLE APPS SCRIPT CỦA BẠN
+        const API_URL = "https://script.google.com/macros/s/AKfycbxbQapaNPougAQegu1ijPn1PedMCYUZQPlI8VSp4Ka7VoatTA4DELKBc8CZAFnlyzxl/exec";
+
+        let db = { Members: [], Flowers: [], OwnedFlowers: [], RaceFlowers: [] };
+        let currentUser = null;
+
+        // Tải dữ liệu từ Google Sheets khi mở trang web
+        async function loadData() {
+            if(API_URL.includes("Thay_Link")) return alert("Vui lòng cấu hình URL API Google Sheet ở dòng 148!");
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "getData" })
+                });
+                db = await res.json();
+                renderAll();
+            } catch (err) {
+                console.error("Lỗi đồng bộ dữ liệu:", err);
+            }
+        }
+
+        // Đẩy toàn bộ dữ liệu lên Google Sheet để lưu trữ trực tuyến
+        async function syncToCloud() {
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "saveData", data: db })
+                });
+            } catch(e) { alert("Lưu trữ đám mây thất bại!"); }
+        }
+
+        function renderAll() {
+            renderPersonalFlowers();
+            renderMemberList();
+        }
+
+        // ĐĂNG NHẬP / ĐĂNG XUẤT
         function handleLogin() {
-            if (!window.db || window.db.members === undefined) {
-                alert("Hệ thống đang kết nối với dữ liệu đám mây (Cloud), vui lòng đợi 1-2 giây rồi bấm lại nhé!");
-                return;
-            }
+            const ingame = document.getElementById('login-ingame').value.trim();
+            const pass = document.getElementById('login-password').value.trim();
+            
+            const user = db.Members.find(m => m.ingame === ingame && m.password === pass);
+            if(!user) return alert("Sai tài khoản hoặc mật khẩu!");
+            if(user.status !== "hoạt động") return alert("Tài khoản của bạn đang bị khóa!");
 
-            const userIn = document.getElementById('login-username').value.trim();
-            const passIn = document.getElementById('login-password').value.trim();
-            const validMembers = window.db.members.filter(m => m && typeof m === 'object' && m.ingame);
-
-            if (validMembers.length === 0) {
-                if (userIn === "admin" && passIn === "admin") {
-                    const rootAdmin = { id: "M_ROOT", ingame: "admin", zaloName: "Admin Tổng", status: "Hoạt động", role: "admin", password: "admin", ownFlowers: [], raceFlowers: [] };
-                    window.db.members = [rootAdmin];
-                    window.db.flowers = [{ id: "F_INIT", name: "Hoa Hồng Đỏ", level: "đỏ", image: "https://picsum.photos/50" }];
-
-                    saveDBtoCloud().then(() => {
-                        alert("Khởi tạo Admin Tổng thành công!");
-                        executeLoginSuccess(rootAdmin);
-                    });
-                    return;
-                }
-            }
-
-            const user = validMembers.find(m => m.ingame === userIn && m.password === passIn && m.status === "Hoạt động");
-            if (user) {
-                sessionStorage.setItem("loggedUserIngame", user.ingame);
-                executeLoginSuccess(user);
-            } else {
-                document.getElementById('login-error').classList.remove('hidden');
-            }
-        }
-        
-        function checkAutoLogin() {
-            const savedIngame = sessionStorage.getItem("loggedUserIngame");
-            if (savedIngame && window.db && window.db.members) {
-                const validMembers = window.db.members.filter(m => m && typeof m === 'object' && m.ingame);
-                const user = validMembers.find(m => m.ingame === savedIngame && m.status === "Hoạt động");
-                if (user) {
-                    console.log("🔄 Tự động đăng nhập lại cho tài khoản:", savedIngame);
-                    executeLoginSuccess(user);
-                } else {
-                    sessionStorage.removeItem("loggedUserIngame"); 
-                }
-            }
-        }
-        window.checkAutoLogin = checkAutoLogin;
-
-        function executeLoginSuccess(user) {
-            window.currentUser = user;
+            currentUser = user;
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('main-screen').classList.remove('hidden');
-            document.getElementById('user-tag').innerText = `${user.ingame} (${user.role})`;
-            document.getElementById('user-tag-pc').innerText = `Xin chào: ${user.ingame} (${user.role})`;
-            
-            if (user.role === 'admin') {
+            document.getElementById('user-info').innerText = `Xin chào, ${user.ingame} (${user.role.toUpperCase()})`;
+
+            if(user.role === 'admin') {
                 document.getElementById('nav-admin-member').classList.remove('hidden');
                 document.getElementById('nav-admin-flower').classList.remove('hidden');
             }
-            setupSearchDropdowns();
-            renderMyFlowerTab();
-            renderAdminMembers();
-            renderAdminFlowers();
+            renderAll();
         }
 
         function handleLogout() {
-            window.currentUser = null;
-            sessionStorage.removeItem("loggedUserIngame");
+            currentUser = null;
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('main-screen').classList.add('hidden');
             document.getElementById('nav-admin-member').classList.add('hidden');
             document.getElementById('nav-admin-flower').classList.add('hidden');
         }
 
+        // ĐIỀU HƯỚNG TAB
         function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('bg-indigo-700'));
-            event.currentTarget.classList.add('bg-indigo-700');
-            setupSearchDropdowns();
-            renderMyFlowerTab();
-        }
-
-        // --- CẬP NHẬT HOA CỦA BẢN THÂN ---
-        function renderMyFlowerTab() {
-            const memData = db.members.find(m => m.id === currentUser.id);
-            if(!memData) return;
-            const ownBox = document.getElementById('my-own-checkboxes');
-            const raceBox = document.getElementById('my-race-checkboxes');
-            ownBox.innerHTML = ''; raceBox.innerHTML = '';
-
-            db.flowers.forEach(f => {
-                const isOwn = (memData.ownFlowers || []).includes(f.id) ? 'checked' : '';
-                const isRace = (memData.raceFlowers || []).includes(f.id) ? 'checked' : '';
-                ownBox.innerHTML += `<label class="flex items-center space-x-2 bg-gray-50 p-1.5 rounded border"><input type="checkbox" value="${f.id}" ${isOwn} class="own-cb"><span class="text-sm">${f.name} [${f.level}]</span></label>`;
-                raceBox.innerHTML += `<label class="flex items-center space-x-2 bg-orange-50 p-1.5 rounded border border-orange-200"><input type="checkbox" value="${f.id}" ${isRace} class="race-cb"><span class="text-sm text-orange-700">${f.name}</span></label>`;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600');
+                btn.classList.add('text-gray-600');
             });
+            event.currentTarget.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600');
         }
 
-        function saveMyFlowers() {
-            const memData = db.members.find(m => m.id === currentUser.id);
-            memData.ownFlowers = Array.from(document.querySelectorAll('.own-cb:checked')).map(cb => cb.value);
-            memData.raceFlowers = Array.from(document.querySelectorAll('.race-cb:checked')).map(cb => cb.value);
-            saveDBtoCloud();
-            alert("Đã đồng bộ lên hệ thống đám mây!");
-        }
-
-        // --- BỘ LỌC TRA CỨU COMBOBOX GÕ CHỮ ---
-        function setupSearchDropdowns() {
-            const fSelect = document.getElementById('search-flower-select');
-            const mSelect = document.getElementById('search-member-select');
-            
-            if (!document.getElementById('search-flower-input').value) {
-                fSelect.innerHTML = '<option value="">-- Chọn hoa cần tìm --</option>';
-                db.flowers.forEach(f => fSelect.innerHTML += `<option value="${f.id}">${f.name} (${f.level})</option>`);
-            }
-            if (!document.getElementById('search-member-input').value) {
-                mSelect.innerHTML = '<option value="">-- Chọn member cần tìm --</option>';
-                db.members.forEach(m => mSelect.innerHTML += `<option value="${m.id}">${m.ingame} (${m.zaloName})</option>`);
-            }
-        }
-
-        function showFlowerDropdown() {
-            document.getElementById('search-flower-select').classList.remove('hidden');
-        }
-
-        function filterFlowerDropdown() {
-            showFlowerDropdown();
-            const keyword = document.getElementById('search-flower-input').value.toLowerCase().trim();
-            const fSelect = document.getElementById('search-flower-select');
-            fSelect.innerHTML = '<option value="">-- Chọn hoa cần tìm --</option>';
-
-            const filtered = db.flowers.filter(f => f.name.toLowerCase().includes(keyword) || f.level.toLowerCase().includes(keyword));
-            filtered.forEach(f => {
-                fSelect.innerHTML += `<option value="${f.id}">${f.name} (${f.level})</option>`;
-            });
-        }
-
-        function selectFlowerOption() {
-            const fSelect = document.getElementById('search-flower-select');
-            const fInput = document.getElementById('search-flower-input');
-            
-            if (fSelect.value) {
-                const selectedText = fSelect.options[fSelect.selectedIndex].text;
-                fInput.value = selectedText;
-                fSelect.classList.add('hidden');
-                searchByFlower(); 
-            }
-        }
-
-        function showMemberDropdown() {
-            document.getElementById('search-member-select').classList.remove('hidden');
-        }
-
-        function filterMemberDropdown() {
-            showMemberDropdown();
-            const keyword = document.getElementById('search-member-input').value.toLowerCase().trim();
-            const mSelect = document.getElementById('search-member-select');
-            mSelect.innerHTML = '<option value="">-- Chọn member cần tìm --</option>';
-
-            const filtered = db.members.filter(m => m.ingame.toLowerCase().includes(keyword) || m.zaloName.toLowerCase().includes(keyword));
-            filtered.forEach(m => {
-                mSelect.innerHTML += `<option value="${m.id}">${m.ingame} (${m.zaloName})</option>`;
-            });
-        }
-
-        function selectMemberOption() {
-            const mSelect = document.getElementById('search-member-select');
-            const mInput = document.getElementById('search-member-input');
-            
-            if (mSelect.value) {
-                const selectedText = mSelect.options[mSelect.selectedIndex].text;
-                mInput.value = selectedText;
-                mSelect.classList.add('hidden');
-                searchByMember();
-            }
-        }
-
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('#search-flower-input') && !e.target.closest('#search-flower-select')) {
-                document.getElementById('search-flower-select').classList.add('hidden');
-            }
-            if (!e.target.closest('#search-member-input') && !e.target.closest('#search-member-select')) {
-                document.getElementById('search-member-select').classList.add('hidden');
-            }
-        });
-
-        // --- XỬ LÝ KẾT QUẢ TRA CỨU CÓ HÌNH ẢNH ---
+        // TAB 1: LOGIC TÌM KIẾM NHANH
         function searchByFlower() {
-            const fId = document.getElementById('search-flower-select').value;
-            const resultBox = document.getElementById('search-flower-result-box');
-            if(!fId) return;
+            const keyword = document.getElementById('search-flower-input').value.toLowerCase();
+            const ownedList = document.getElementById('search-flower-owned');
+            const raceList = document.getElementById('search-flower-race');
+            ownedList.innerHTML = ''; raceList.innerHTML = '';
+            if(!keyword) return;
 
-            const flower = db.flowers.find(f => f.id === fId);
-            if (!flower) return;
+            const flower = db.Flowers.find(f => f.name.toLowerCase().includes(keyword));
+            if(!flower) return;
 
-            const owners = db.members.filter(m => m.ownFlowers && m.ownFlowers.includes(fId));
-            const racers = db.members.filter(m => m.raceFlowers && m.raceFlowers.includes(fId));
+            db.OwnedFlowers.filter(o => String(o.flowerId) === String(flower.id)).forEach(o => {
+                const m = db.Members.find(mem => String(mem.id) === String(o.memberId));
+                if(m) ownedList.innerHTML += `<li>${m.ingame} (${m.zaloName})</li>`;
+            });
 
-            let html = `
-                <h3 class="font-bold text-indigo-600 border-b pb-2 mb-3">🌸 KẾT QUẢ THEO HOA</h3>
-                <div class="flex items-center space-x-4 mb-4 p-2 bg-gray-50 rounded-lg border">
-                    <img src="${flower.image}" alt="${flower.name}" onerror="this.src='https://picsum.photos/100'" class="w-16 h-16 rounded-lg object-cover shadow-sm border bg-white">
-                    <div>
-                        <h4 class="font-bold text-gray-800 text-sm uppercase">${flower.name}</h4>
-                        <span class="inline-block px-2 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-700 uppercase">Cấp độ: ${flower.level}</span>
-                    </div>
-                </div>
-                <div class="mb-4">
-                    <h4 class="text-sm font-bold text-gray-600">👥 Thành viên sở hữu:</h4>
-                    <ul class="list-disc pl-5 text-gray-700 mt-1 space-y-1 text-sm">
-                        ${owners.length ? owners.map(o => `<li><strong>${o.ingame}</strong> (Zalo: ${o.zaloName})</li>`).join('') : '<li class="text-gray-400 italic">Chưa có ai sở hữu</li>'}
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="text-sm font-bold text-orange-600">🏁 Thành viên đăng ký đua hội:</h4>
-                    <ul class="list-disc pl-5 text-gray-700 mt-1 space-y-1 text-sm">
-                        ${racers.length ? racers.map(r => `<li><strong>${r.ingame}</strong> (Zalo: ${r.zaloName})</li>`).join('') : '<li class="text-gray-400 italic">Chưa có ai đăng ký đua</li>'}
-                    </ul>
-                </div>
-            `;
-            resultBox.innerHTML = html;
+            db.RaceFlowers.filter(r => String(r.flowerId) === String(flower.id)).forEach(r => {
+                const m = db.Members.find(mem => String(mem.id) === String(r.memberId));
+                if(m) raceList.innerHTML += `<li>${m.ingame} (${m.zaloName})</li>`;
+            });
         }
 
         function searchByMember() {
-            const mId = document.getElementById('search-member-select').value;
-            const resultBox = document.getElementById('search-member-result-box');
-            if(!mId) return;
+            const keyword = document.getElementById('search-member-input').value.toLowerCase();
+            const ownedList = document.getElementById('search-member-owned');
+            const raceList = document.getElementById('search-member-race');
+            ownedList.innerHTML = ''; raceList.innerHTML = '';
+            if(!keyword) return;
 
-            const m = db.members.find(mem => mem.id === mId);
-            if(!m) return;
+            const member = db.Members.find(m => m.ingame.toLowerCase().includes(keyword));
+            if(!member) return;
 
-            let ownFlowersHTML = [];
-            let raceFlowersHTML = [];
-
-            db.flowers.forEach(f => {
-                if(m.ownFlowers && m.ownFlowers.includes(f.id)) {
-                    ownFlowersHTML.push(`<button onclick="openFlowerModal('${f.id}')" class="px-2.5 py-1 text-xs font-semibold rounded-md bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 transition-all shadow-sm">🌸 ${f.name} (${f.level})</button>`);
-                }
-                if(m.raceFlowers && m.raceFlowers.includes(f.id)) {
-                    raceFlowersHTML.push(`<button onclick="openFlowerModal('${f.id}')" class="px-2.5 py-1 text-xs font-semibold rounded-md bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100 transition-all shadow-sm">🏁 ${f.name}</button>`);
-                }
+            db.OwnedFlowers.filter(o => String(o.memberId) === String(member.id)).forEach(o => {
+                const f = db.Flowers.find(fl => String(fl.id) === String(o.flowerId));
+                if(f) ownedList.innerHTML += `<li class="level-${f.level.replace(' ', '-')}">${f.name} [Cấp ${f.level}]</li>`;
             });
 
-            let html = `
-                <h3 class="font-bold text-indigo-600 border-b pb-2 mb-3">👤 KẾT QUẢ THEO MEMBER</h3>
-                <div class="mb-4">
-                    <h4 class="text-sm font-bold text-gray-600">🌸 Hoa đang sở hữu:</h4>
-                    <div class="flex flex-wrap gap-2 mt-2">
-                        ${ownFlowersHTML.length ? ownFlowersHTML.join('') : '<span class="text-gray-400 italic text-sm">Chưa có hoa sở hữu</span>'}
-                    </div>
-                </div>
-                <div>
-                    <h4 class="text-sm font-bold text-orange-600">🏁 Hoa đăng ký đua hội:</h4>
-                    <div class="flex flex-wrap gap-2 mt-2">
-                        ${raceFlowersHTML.length ? raceFlowersHTML.join('') : '<span class="text-gray-400 italic text-sm">Chưa đăng ký đua hoa nào</span>'}
-                    </div>
-                </div>
-            `;
-            resultBox.innerHTML = html;
-        }
-
-        // --- 2 HÀM ĐIỀU KHIỂN POPUP ẢNH HOA ---
-        function openFlowerModal(flowerId) {
-            if (!window.db || !window.db.flowers) return;
-            const flower = window.db.flowers.find(f => f.id === flowerId);
-            if (!flower) return;
-
-            document.getElementById('modal-flower-name').innerText = `${flower.name} (${flower.level})`;
-            document.getElementById('modal-flower-img').src = flower.image;
-            document.getElementById('flower-image-modal').classList.remove('hidden');
-        }
-
-        function closeFlowerModal() {
-            document.getElementById('flower-image-modal').classList.add('hidden');
-        }
-
-        // --- QUẢN LÝ MEMBER (ADMIN) ---
-        function renderAdminMembers() {
-            const tbody = document.getElementById('member-table-body'); tbody.innerHTML = '';
-            db.members.forEach(m => {
-                tbody.innerHTML += `<tr class="border-b hover:bg-gray-50 text-sm"><td class="p-2 font-bold">${m.ingame}</td><td class="p-2">${m.zaloName}</td><td class="p-2"><span class="px-2 py-0.5 rounded text-xs ${m.role==='admin'?'bg-purple-200 text-purple-800':'bg-blue-200 text-blue-800'}">${m.role}</span></td><td class="p-2"><span class="text-xs ${m.status==='Hoạt động'?'text-green-600':'text-red-500'} font-medium">● ${m.status}</span></td><td class="p-2 flex gap-2"><button onclick="editMember('${m.id}')" class="bg-yellow-500 text-white text-xs px-2 py-1 rounded cursor-pointer">Sửa</button><button onclick="deleteMember('${m.id}')" class="bg-red-500 text-white text-xs px-2 py-1 rounded cursor-pointer">Xóa</button></td></tr>`;
+            db.RaceFlowers.filter(r => String(r.memberId) === String(member.id)).forEach(r => {
+                const f = db.Flowers.find(fl => String(fl.id) === String(r.flowerId));
+                if(f) raceList.innerHTML += `<li class="level-${f.level.replace(' ', '-')}">${f.name} [Cấp ${f.level}]</li>`;
             });
         }
 
-        function saveMember() {
+        // TAB 2: GIAO DIỆN CẬP NHẬT HOA CÁ NHÂN
+        function renderPersonalFlowers() {
+            if(!currentUser) return;
+            const tbody = document.getElementById('personal-flower-table');
+            tbody.innerHTML = '';
+
+            db.Flowers.forEach(f => {
+                const isOwned = db.OwnedFlowers.some(o => String(o.memberId) === String(currentUser.id) && String(o.flowerId) === String(f.id));
+                const isRace = db.RaceFlowers.some(r => String(r.memberId) === String(currentUser.id) && String(r.flowerId) === String(f.id));
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2"><img src="${f.image || 'https://placehold.co/40'}" class="w-10 h-10 object-cover rounded"></td>
+                        <td class="p-2 font-semibold">${f.name}</td>
+                        <td class="p-2 level-${f.level.replace(' ', '-')}">${f.level.toUpperCase()}</td>
+                        <td class="p-2 text-center"><input type="checkbox" class="own-cb" data-id="${f.id}" ${isOwned ? 'checked' : ''}></td>
+                        <td class="p-2 text-center"><input type="checkbox" class="race-cb" data-id="${f.id}" ${isRace ? 'checked' : ''}></td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function savePersonalFlowers() {
+            // Lọc bỏ hoa cũ của tài khoản này
+            db.OwnedFlowers = db.OwnedFlowers.filter(o => String(o.memberId) !== String(currentUser.id));
+            db.RaceFlowers = db.RaceFlowers.filter(r => String(r.memberId) !== String(currentUser.id));
+
+            document.querySelectorAll('.own-cb:checked').forEach(cb => {
+                db.OwnedFlowers.push({ memberId: currentUser.id, flowerId: cb.dataset.id });
+            });
+            document.querySelectorAll('.race-cb:checked').forEach(cb => {
+                db.RaceFlowers.push({ memberId: currentUser.id, flowerId: cb.dataset.id });
+            });
+
+            alert("Đang đồng bộ lên Google Sheet...");
+            await syncToCloud();
+            alert("Lưu thông tin thành công!");
+            renderAll();
+        }
+
+        // TAB 3: ADMIN QUẢN LÝ MEMBER
+        function renderMemberList() {
+            const tbody = document.getElementById('member-list-table');
+            tbody.innerHTML = '';
+            db.Members.forEach(m => {
+                tbody.innerHTML += `
+                    <tr class="border-b text-xs md:text-sm">
+                        <td class="p-2 font-bold">${m.ingame}</td>
+                        <td class="p-2">${m.zaloName}</td>
+                        <td class="p-2"><span class="px-2 py-0.5 rounded ${m.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-gray-100'}">${m.role}</span></td>
+                        <td class="p-2">${m.status}</td>
+                        <td class="p-2 text-right">
+                            <button onclick="editMember(${m.id})" class="text-blue-600 hover:underline font-semibold mr-2">Sửa</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function saveMember() {
             const id = document.getElementById('member-id').value;
-            const ingame = document.getElementById('mem-ingame').value.trim();
-            const zaloName = document.getElementById('mem-zalo').value.trim();
-            const password = document.getElementById('mem-password').value.trim();
-            const status = document.getElementById('mem-status').value;
-            const role = document.getElementById('mem-role').value;
+            const ingame = document.getElementById('member-ingame').value.trim();
+            const zaloName = document.getElementById('member-zalo').value.trim();
+            const password = document.getElementById('member-password').value.trim();
+            const status = document.getElementById('member-status').value;
+            const role = document.getElementById('member-role').value;
 
-            if(!ingame || !password) { alert("Điền Ingame và Mật khẩu!"); return; }
+            if(!ingame || !password) return alert("Vui lòng điền Ingame và Mật khẩu!");
 
-            if (id) {
-                const m = db.members.find(mem => mem.id === id);
-                m.ingame = ingame; m.zaloName = zaloName; m.password = password; m.status = status; m.role = role;
-            } else {
-                db.members.push({ id: "M" + Date.now(), ingame, zaloName, status, role, password, ownFlowers: [], raceFlowers: [] });
+            if(id) { // Chế độ sửa thông tin
+                const index = db.Members.findIndex(m => String(m.id) === String(id));
+                if(index > -1) db.Members[index] = { id, ingame, zaloName, status, role, password };
+            } else { // Chế độ tạo mới
+                if(db.Members.some(m => m.ingame === ingame)) return alert("Tên Ingame này đã tồn tại!");
+                const newId = db.Members.length > 0 ? Math.max(...db.Members.map(m => m.id)) + 1 : 1;
+                db.Members.push({ id: newId, ingame, zaloName, status, role, password });
             }
-            saveDBtoCloud(); resetMemberForm();
+            
+            await syncToCloud();
+            clearMemberForm();
+            renderAll();
+            alert("Cập nhật thành viên thành công!");
         }
 
         function editMember(id) {
-            const m = db.members.find(mem => mem.id === id);
+            const m = db.Members.find(mem => mem.id === id);
+            if(!m) return;
             document.getElementById('member-id').value = m.id;
-            document.getElementById('mem-ingame').value = m.ingame;
-            document.getElementById('mem-zalo').value = m.zaloName;
-            document.getElementById('mem-password').value = m.password;
-            document.getElementById('mem-status').value = m.status;
-            document.getElementById('mem-role').value = m.role;
-            document.getElementById('member-form-title').innerText = "CHỈNH SỬA THÔNG TIN MEMBER";
+            document.getElementById('member-ingame').value = m.ingame;
+            document.getElementById('member-zalo').value = m.zaloName;
+            document.getElementById('member-password').value = m.password;
+            document.getElementById('member-status').value = m.status;
+            document.getElementById('member-role').value = m.role;
+            document.getElementById('member-form-title').innerText = "✏️ Sửa Thông Tin Member";
         }
 
-        function deleteMember(id) {
-            if(confirm("Xóa thành viên này?")) {
-                db.members = db.members.filter(m => m.id !== id);
-                saveDBtoCloud();
-            }
+        function clearMemberForm() {
+            document.getElementById('member-id').value = '';
+            document.getElementById('member-ingame').value = '';
+            document.getElementById('member-zalo').value = '';
+            document.getElementById('member-password').value = '';
+            document.getElementById('member-form-title').innerText = "➕ Tạo Thành Viên Mới";
         }
 
-        function resetMemberForm() {
-            document.getElementById('member-id').value = ""; document.getElementById('mem-ingame').value = "";
-            document.getElementById('mem-zalo').value = ""; document.getElementById('mem-password').value = "";
-            document.getElementById('member-form-title').innerText = "THÊM MEMBER MỚI";
-        }
-
-        // --- QUẢN LÝ HOA (ADMIN) ---
-        function renderAdminFlowers() {
-            const tbody = document.getElementById('flower-table-body'); tbody.innerHTML = '';
-            db.flowers.forEach(f => {
-                tbody.innerHTML += `<tr class="border-b hover:bg-gray-50 text-sm"><td class="p-2"><img src="${f.image}" onerror="this.src='https://picsum.photos/50'" class="w-10 h-10 object-cover rounded shadow-sm"></td><td class="p-2 font-bold">${f.name}</td><td class="p-2"><span class="capitalize text-xs font-bold px-2 py-0.5 rounded border">${f.level}</span></td><td class="p-2"><button onclick="deleteFlower('${f.id}')" class="bg-red-500 text-white text-xs px-2 py-1 rounded cursor-pointer">Xóa</button></td></tr>`;
-            });
-        }
-
-        function saveFlower() {
+        // TAB 4: ADMIN THÊM HOA MỚI
+        async function addFlower() {
             const name = document.getElementById('flower-name').value.trim();
+            const image = document.getElementById('flower-image').value.trim();
             const level = document.getElementById('flower-level').value;
-            let image = document.getElementById('flower-image').value.trim();
-            if(!name) { alert("Vui lòng nhập tên hoa!"); return; }
-            if(!image) image = "https://picsum.photos/50";
 
-            db.flowers.push({
-                id: "F" + Date.now(),
-                name,
-                level,
-                image
-            });
-            saveDBtoCloud();
-            document.getElementById('flower-name').value = "";
-            document.getElementById('flower-image').value = "";
+            if(!name) return alert("Vui lòng nhập tên hoa!");
+            const newId = db.Flowers.length > 0 ? Math.max(...db.Flowers.map(f => f.id)) + 1 : 1;
+            
+            db.Flowers.push({ id: newId, name, image, level });
+            await syncToCloud();
+            
+            document.getElementById('flower-name').value = '';
+            document.getElementById('flower-image').value = '';
+            renderAll();
+            alert("Thêm hoa mới thành công!");
         }
 
-        function deleteFlower(id) {
-            if(confirm("Xóa bông hoa này khỏi hệ thống?")) {
-                db.flowers = db.flowers.filter(f => f.id !== id);
-                saveDBtoCloud();
-            }
-        }
+        // Khởi chạy khi load trang web
+        loadData();
     </script>
 </body>
 </html>
