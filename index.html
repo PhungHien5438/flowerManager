@@ -741,6 +741,7 @@
             const memberData = { ingame, zaloName, status, role, password, isDone };
             var error = null;
             if (id) {
+                console.log("Cập nhật thành viên ID:", id, memberData);
                 error = await supabaseClient
                     .from('members')
                     .update({
@@ -753,6 +754,7 @@
                     })
                     .eq('id', id);
             } else {
+                console.log("Tạo thành viên mới:", id, memberData);
                 error = await supabaseClient
                     .from('members')
                     .insert({
