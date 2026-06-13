@@ -608,15 +608,15 @@
                 const myRace = db.raceflowers.filter(r => String(r.memberId) === String(currentUser.id));
 
                 // 2. Đồng bộ bảng Sở Hữu lên Supabase: Xóa cũ, ghi mới
-                await supabaseClient.from('ownedFlowers').delete().eq('memberId', currentUser.id);
+                await supabaseClient.from('OwnedFlowers').delete().eq('memberId', currentUser.id);
                 if (myOwned.length > 0) {
-                    await supabaseClient.from('ownedFlowers').insert(myOwned.map(o => ({ memberId: o.memberId, flowerId: o.flowerId })));
+                    await supabaseClient.from('OwnedFlowers').insert(myOwned.map(o => ({ memberId: o.memberId, flowerId: o.flowerId })));
                 }
 
                 // 3. Đồng bộ bảng Đua Hội lên Supabase: Xóa cũ, ghi mới
-                await supabaseClient.from('raceFlowers').delete().eq('memberId', currentUser.id);
+                await supabaseClient.from('RaceFlowers').delete().eq('memberId', currentUser.id);
                 if (myRace.length > 0) {
-                    await supabaseClient.from('raceFlowers').insert(myRace.map(r => ({ memberId: r.memberId, flowerId: r.flowerId })));
+                    await supabaseClient.from('RaceFlowers').insert(myRace.map(r => ({ memberId: r.memberId, flowerId: r.flowerId })));
                 }
 
                 alert("Đã cập nhật kho hoa cá nhân thành công! 🎉");
@@ -756,7 +756,7 @@
             const memberData = { ingame, zaloName, status, role, password, isDone };
             if (id) { memberData.id = id; } // Nếu sửa thì đính kèm id cũ vào
 
-            const { error } = await supabaseClient.from('members').upsert(memberData);
+            const { error } = await supabaseClient.from('Members').upsert(memberData);
 
             if (error) {
                 alert("Lỗi: " + error.message);
