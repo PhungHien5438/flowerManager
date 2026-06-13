@@ -339,22 +339,22 @@
 
     <script>
         const SUPABASE_URL = "https://hmqovtoxirdqaxvxkjsk.supabase.co/";
-		const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtcW92dG94aXJkcWF4dnhranNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTkyNjIsImV4cCI6MjA5NjA5NTI2Mn0.hCkHljsRfmXJrKu7oRhiSD0wscQzwXQN3UwW_HzOaKg";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtcW92dG94aXJkcWF4dnhranNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTkyNjIsImV4cCI6MjA5NjA5NTI2Mn0.hCkHljsRfmXJrKu7oRhiSD0wscQzwXQN3UwW_HzOaKg";
         console.log("🚀 Khởi tạo kết nối Supabase...");
-		const supabaseClient = window.supabase.createClient(
-			SUPABASE_URL,
-			SUPABASE_ANON_KEY
-		);
+        const supabaseClient = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY
+        );
         console.log("✅ Kết nối Supabase đã sẵn sàng!");
 
-		let db = {
-			members: [],
-			flowers: [],
-			ownedflowers: [],
-			raceflowers: []
-		};
+        let db = {
+            members: [],
+            flowers: [],
+            ownedflowers: [],
+            raceflowers: []
+        };
 
-		let currentUser = null;
+        let currentUser = null;
 
         // Hàm hiển thị/ẩn Loading tiện lợi
         function showLoading(text = "Đang xử lý, vui lòng đợi...") {
@@ -390,21 +390,6 @@
                 renderAll();
             } catch (err) {
                 console.error("Lỗi lấy dữ liệu:", err);
-            } finally {
-                hideLoading();
-            }
-        }
-
-        // Đẩy toàn bộ dữ liệu lên Google Sheet để lưu trữ trực tuyến
-        async function syncToCloud() {
-            showLoading("💾 Đang lưu dữ liệu lên Cloud...");
-            try {
-                await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "saveData", data: db })
-                });
-            } catch (e) {
-                alert("Lưu trữ đám mây thất bại!");
             } finally {
                 hideLoading();
             }
@@ -836,7 +821,27 @@
             const newId = db.flowers.length > 0 ? Math.max(...db.flowers.map(f => f.id)) + 1 : 1;
             db.flowers.push({ id: newId, name, image, level });
 
-            await syncToCloud(); // Tự động bật/tắt loading tại đây
+            showLoading("💾 Đang lưu dữ liệu lên Cloud...");
+            try {
+                const { data, error } = await supabaseClient
+                    .from('flowers')
+                    .insert({
+                        name,
+                        image,
+                        level
+                    });
+
+                if (error) {
+                    console.error(error);
+                    alert(error.message);
+                    return;
+                }
+            } catch (e) {
+                alert("Lưu trữ đám mây thất bại!");
+            } finally {
+                hideLoading();
+            }
+
             document.getElementById('flower-name').value = '';
             document.getElementById('flower-image').value = '';
             renderAll();
