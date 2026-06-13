@@ -739,9 +739,31 @@
             showLoading("👥 Đang lưu thông tin thành viên...");
 
             const memberData = { ingame, zaloName, status, role, password, isDone };
-            if (id) { memberData.id = id; } // Nếu sửa thì đính kèm id cũ vào
-
-            const { error } = await supabaseClient.from('members').upsert(memberData);
+            var error = null;
+            if (id) {
+                error = await supabaseClient
+                    .from('members')
+                    .update({
+                        ingame,
+                        zaloName,
+                        status,
+                        role,
+                        password,
+                        isDone
+                    })
+                    .eq('id', id);
+            } else {
+                error = await supabaseClient
+                    .from('members')
+                    .insert({
+                        ingame,
+                        zaloName,
+                        status,
+                        role,
+                        password,
+                        isDone
+                    });
+            }
 
             if (error) {
                 alert("Lỗi: " + error.message);
